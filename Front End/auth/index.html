@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DHCR | Login & Registration</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="auth-container">
+    <!-- Tabs for Login / Register -->
+    <div class="tabs">
+      <button class="tab active" id="loginTab">LOGIN</button>
+      <button class="tab" id="registerTab">REGISTER</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm" class="form active">
+      <h2>Login</h2>
+
+      <label for="loginRole">Select Role</label>
+      <select id="loginRole" required>
+        <option value="student">Student</option>
+        <option value="staff">Staff</option>
+        <option value="warden">Warden</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" placeholder="Enter your email" required />
+
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter password" required />
+
+      <!-- Remember Me (inline with label) and Forgot Password below -->
+      <div class="options-vertical">
+        <label class="checkbox">
+          <input type="checkbox" id="rememberMe" /> Remember Me
+        </label>
+        <a href="#" class="forgot">Forgot Password?</a>
+      </div>
+
+      <button type="submit" class="btn">LOGIN (Demo)</button>
+
+      <p class="switch-text">New User? <a href="#" id="switchToRegister">Register Here</a></p>
+    </form>
+
+    <!-- REGISTRATION FORM -->
+    <form id="registerForm" class="form">
+      <h2>Register</h2>
+
+      <!-- ---------- CORE FIELDS ---------- -->
+      <label for="fullName">Full Name</label>
+      <input type="text" id="fullName" placeholder="Enter your full name" required />
+
+      <label for="email">Institutional Email</label>
+      <input type="email" id="email" placeholder="name@iiitpune.edu" required />
+
+      <label for="mobile">Mobile Number</label>
+      <input type="tel" id="mobile" placeholder="+91-XXXXXXXXXX" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Create a password" required />
+
+      <label for="confirmPassword">Confirm Password</label>
+      <input type="password" id="confirmPassword" placeholder="Re-enter password" required />
+
+      <label for="role">Select Role</label>
+      <select id="role" required>
+        <option value="student">Student</option>
+        <option value="staff">Staff</option>
+        <option value="warden">Warden</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <!-- Agreement -->
+      <label class="checkbox">
+        <input type="checkbox" id="agreement" required />
+        I agree to the <a href="#">Terms & Conditions</a>, <a href="#">Privacy Policy</a> & Code of Conduct.
+      </label>
+
+      <!-- ---------- STUDENT SECTION ---------- -->
+      <div id="studentFields" class="role-section">
+        <hr />
+        <p class="section-title">Student Details</p>
+
+        <label for="studentPRN">PRN / Roll No</label>
+        <input type="text" id="studentPRN" placeholder="BIA27 / PRN..." required />
+
+        <label for="studentBlock">Hostel Block</label>
+        <select id="studentBlock" required>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+        </select>
+
+        <label for="studentRoom">Room Number</label>
+        <input type="text" id="studentRoom" placeholder="B-203" required />
+
+        <label for="studentCourse">Course / Year / Department</label>
+        <input type="text" id="studentCourse" placeholder="B.E. / 3rd Year / IT" required />
+
+        <label for="guardianContact">Guardian Contact (optional)</label>
+        <input type="tel" id="guardianContact" placeholder="+91-XXXXXXXXXX" />
+
+        <label for="studentIdProof">Student ID Proof</label>
+        <input type="file" id="studentIdProof" accept=".pdf,.jpg,.jpeg,.png" required />
+      </div>
+
+      <!-- ---------- STAFF SECTION ---------- -->
+      <div id="staffFields" class="role-section hidden">
+        <hr />
+        <p class="section-title">Staff Details</p>
+
+        <label for="staffEmpId">Employee ID</label>
+        <input type="text" id="staffEmpId" placeholder="EMP-1003" required />
+
+        <label for="staffOfficialEmail">Official Email</label>
+        <input type="email" id="staffOfficialEmail" placeholder="official@iiitpune.edu" required />
+
+       <label for="staffMobile">Mobile Number</label>
+        <input type="tel" id="staffMobile" placeholder="+91-XXXXXXXXXX" required />
+
+        <label for="staffIdProof">Employee ID Proof</label>
+        <input type="file" id="staffIdProof" accept=".pdf,.jpg,.jpeg,.png" required />
+
+        <label for="staffInvite">Invite Code (from Admin/Warden)</label>
+        <input type="text" id="staffInvite" placeholder="INV-STAFF-XXXXXX" required />
+      </div>
+
+      <!-- ---------- WARDEN SECTION ---------- -->
+      <div id="wardenFields" class="role-section hidden">
+        <hr />
+        <p class="section-title">Warden Details</p>
+
+        <label for="wardenId">Warden ID</label>
+        <input type="text" id="wardenId" placeholder="WRD-1002" required />
+
+        <!-- Assigned Blocks removed per your current version -->
+
+        <label for="wardenEmail">Official Email</label>
+        <input type="email" id="wardenEmail" placeholder="warden@iiitpune.edu" required />
+
+        <label for="wardenMobile">Mobile Number</label>
+        <input type="tel" id="wardenMobile" placeholder="+91-XXXXXXXXXX" required />
+
+        <label for="wardenIdProof">Appointment Letter / ID</label>
+        <input type="file" id="wardenIdProof" accept=".pdf,.jpg,.jpeg,.png" required />
+
+        <label for="wardenInvite">Invite Code (from Admin)</label>
+        <input type="text" id="wardenInvite" placeholder="INV-WARDEN-XXXXXX" required />
+      </div>
+
+      <!-- ---------- ADMIN SECTION ---------- -->
+      <div id="adminFields" class="role-section hidden">
+        <hr />
+        <p class="section-title">Admin Details</p>
+
+        <label for="adminId">Admin ID</label>
+        <input type="text" id="adminId" placeholder="ADM-0001" required />
+
+        <label for="adminScope">Scope</label>
+        <select id="adminScope" required>
+          <option value="Global">Global</option>
+          <option value="Institute" selected>Institute</option>
+          <option value="Department">Department</option>
+        </select>
+
+        <label for="adminEmail">Official Email</label>
+        <input type="email" id="adminEmail" placeholder="admin@iiitpune.edu" required />
+
+        <label for="adminMobile">Mobile Number</label>
+        <input type="tel" id="adminMobile" placeholder="+91-XXXXXXXXXX" required />
+
+        <label for="adminInvite">Invite Code (from Institute)</label>
+        <input type="text" id="adminInvite" placeholder="INV-ADMIN-XXXXXX" required />
+
+        <p class="hint">⚠ Second-factor setup (TOTP/SMS) will be configured after first login.</p>
+      </div>
+
+      <button type="submit" class="btn">REGISTER (Demo)</button>
+
+      <p class="switch-text">Already have an account? <a href="#" id="switchToLogin">Login Here</a></p>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
