@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DHCR • Warden Dashboard</title>
+  <link rel="stylesheet" href="warden.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="sidebar">
+      <div class="brand">DHCR</div>
+      <nav>
+        <button class="nav-link active" data-view="dashboard">🏠 Dashboard</button>
+        <button class="nav-link" data-view="complaints">📋 Complaints</button>
+        <button class="nav-link" data-view="proofs">🖼️ Proofs</button><!-- NEW -->
+        <button class="nav-link" data-view="notices">📢 Notices</button>
+        <button class="nav-link" data-view="staff">👷 Staff</button>
+        <button class="nav-link" data-view="settings">⚙️ Settings</button>
+        <button class="nav-link" data-view="performance">📈 Performance</button>
+        <button class="nav-link" data-view="resale">🪙 Resale Market</button>
+
+
+      </nav>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="main">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <h1>Warden Dashboard</h1>
+        <div class="actions">
+          <span class="welcome">Welcome, <strong id="wardenName">[Warden]</strong></span>
+          <button id="notifBtn" class="icon-btn" title="Notifications">🔔</button>
+          <button id="profileBtn" class="icon-btn" title="Profile">👤</button>
+          <button id="logoutBtn" class="btn-outline">Logout</button>
+        </div>
+      </header>
+
+      <!-- ====== VIEW: Dashboard ====== -->
+      <section id="view-dashboard" class="view active">
+        <!-- KPI row -->
+        <div class="kpis">
+          <article class="kpi"><p class="label">New Complaints</p><p class="value" id="kpiNew">0</p></article>
+          <article class="kpi"><p class="label">In-Progress</p><p class="value" id="kpiProgress">0</p></article>
+          <article class="kpi"><p class="label">Resolved This Week</p><p class="value" id="kpiResolved">0</p></article>
+          <article class="kpi"><p class="label">Escalated</p><p class="value" id="kpiEscalated">0</p></article>
+        </div>
+
+        <!-- Complaints overview -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h2>Pending Action</h2></div>
+            <ul id="pendingList" class="list"></ul>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Recent Activity</h2></div>
+            <ul id="recentList" class="list"></ul>
+          </div>
+        </div>
+
+        <!-- Announcements -->
+        <div class="card">
+          <div class="card-head between">
+            <h2>Announcements</h2>
+            <button id="postNoticeBtn" class="btn-primary">+ Post a New Notice</button>
+          </div>
+          <ul id="noticeList" class="list"></ul>
+        </div>
+      </section>
+      <!-- ====== /VIEW: Dashboard ====== -->
+
+      <!-- ====== VIEW: Complaints (full table) ====== -->
+      <section id="view-complaints" class="view">
+        <div class="card">
+          <div class="card-head between">
+            <h2>All Complaints</h2>
+            <div class="filters">
+              <select id="filterStatus">
+                <option value="all">All</option>
+                <option value="new">New</option>
+                <option value="assigned">Assigned</option>
+                <option value="progress">In Progress</option>
+                <option value="pendingApproval">Pending Approval</option>
+                <option value="resolved">Resolved</option>
+                <option value="escalated">Escalated</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th><th>Type</th><th>Title</th><th>Room</th><th>Slot</th><th>Status</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="complaintsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Proofs (thumbnails -> approve modal) ====== -->
+      <section id="view-proofs" class="view">
+        <div class="card">
+          <div class="card-head between">
+            <h2>Proofs Awaiting Review</h2>
+            <p class="muted">Click a card to open Approve / Reject.</p>
+          </div>
+          <div id="proofGrid" class="proof-queue"><!-- JS fills --></div>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Notices ====== -->
+      <section id="view-notices" class="view">
+        <div class="card">
+          <div class="card-head between">
+            <h2>Notices</h2>
+            <button id="postNoticeBtn2" class="btn-primary">+ Post a New Notice</button>
+          </div>
+          <ul id="noticesFull" class="list"></ul>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Staff (placeholder) ====== -->
+      <section id="view-staff" class="view">
+        <div class="card">
+          <div class="card-head"><h2>Staff</h2></div>
+          <p class="muted">Hook your staff directory here later.</p>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Settings (placeholder) ====== -->
+      <section id="view-settings" class="view">
+        <div class="card">
+          <div class="card-head"><h2>Settings</h2></div>
+          <p class="muted">General settings (scopes, invite codes, etc.)</p>
+        </div>
+      </section>
+
+      <!-- ===== View: Performance & Ratings ===== -->
+      <section id="view-performance" class="view">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Staff Performance & Ratings</h2>
+            <p class="muted">Demo data for now. Replace with API later.</p>
+          </div>
+
+          <!-- Top metrics -->
+          <div class="perf-cards">
+            <div class="perf-card"><p class="label">Total Staff</p><p class="value" id="perfTotalStaff">0</p></div>
+            <div class="perf-card"><p class="label">Total Resolved (All)</p><p class="value" id="perfTotalResolved">0</p></div>
+            <div class="perf-card"><p class="label">Average Rating (All)</p><p class="value" id="perfAvgAll">0.0</p></div>
+          </div>
+
+          <!-- Comparison charts -->
+          <div class="perf-charts">
+            <div class="chart-card">
+              <h3>Resolved by Staff</h3>
+              <div id="chartResolved" class="bar-chart"></div>
+            </div>
+            <div class="chart-card">
+              <h3>Average Rating by Staff</h3>
+              <div id="chartRating" class="bar-chart"></div>
+            </div>
+          </div>
+
+          <!-- Detailed table -->
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Staff</th>
+                  <th>Resolved</th>
+                  <th>Assigned</th>
+                  <th>In-Progress</th>
+                  <th>Avg Rating</th>
+                  <th>Ratings Count</th>
+                </tr>
+              </thead>
+              <tbody id="perfBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- ===== /Performance ===== -->
+
+
+      <!-- ====== VIEW: Resale (right-side view like Notices) ====== -->
+<section id="view-resale" class="view">
+  <div class="card">
+    <div class="card-head between">
+      <h2>Resale Market</h2>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <input id="rsSearch" type="text" placeholder="🔍 Search for an item..." style="padding:.6rem .8rem; border-radius:10px; border:1px solid #d8e2ff; min-width:260px;">
+        <select id="rsCategory" style="padding:.6rem .8rem; border-radius:10px; border:1px solid #d8e2ff;">
+          <option value="all">Filter by Category</option>
+          <option value="electronics">Electronics</option>
+          <option value="books">Books</option>
+          <option value="furniture">Furniture</option>
+          <option value="misc">Misc</option>
+        </select>
+        <select id="rsSort" style="padding:.6rem .8rem; border-radius:10px; border:1px solid #d8e2ff;">
+          <option value="new">Sort by: Newest</option>
+          <option value="priceAsc">Price: Low → High</option>
+          <option value="priceDesc">Price: High → Low</option>
+          <option value="old">Oldest</option>
+        </select>
+        <button class="btn-primary" id="rsPostBtn">+ Post Item</button>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div id="rsGrid" class="rs-grid">
+        <!-- JS will render resale cards here -->
+      </div>
+    </div>
+  </div>
+</section>
+
+ <!-- ====== VIEW: Resale (right-side view like Notices) end ====== -->
+
+
+      <footer class="footer">© <span id="year"></span> DHCR</footer>
+    </main>
+  </div>
+
+  <!-- ===== Modals ===== -->
+
+  <!-- Assign Staff (no time-slot) -->
+  <div id="assignModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="assignTitle">
+    <div class="modal-card" style="max-width:520px;">
+      <button class="modal-close" id="assignClose" aria-label="Close">×</button>
+      <h2 id="assignTitle">Assign Staff</h2>
+      <form id="assignForm" class="stack">
+        <input type="hidden" id="assignComplaintId" />
+        <label class="field">
+          <span>Choose Staff</span>
+          <select id="assignStaff"></select>
+        </label>
+        <div class="actions-right">
+          <button class="btn-ghost" type="button" id="assignCancel">Cancel</button>
+          <button class="btn-primary" type="submit">Assign</button>
+        </div>
+      </form>
+      <p class="muted" style="margin-top:8px;">
+        * Visit <strong>date & time</strong> come from the student’s request and cannot be changed here.
+      </p>
+    </div>
+  </div>
+
+  <!-- Approve Resolution (proof image) -->
+  <div id="approveModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="approveTitle">
+    <div class="modal-card" style="max-width:720px;">
+      <button class="modal-close" id="approveClose" aria-label="Close">×</button>
+      <h2 id="approveTitle">Review Resolution Proof</h2>
+      <div class="stack">
+        <div class="summary" id="approveSummary"></div>
+        <div class="img-preview" id="approvePreview">No image</div>
+        <div class="actions-right">
+          <button class="btn-ghost" id="rejectBtn">Reject</button>
+          <button class="btn-primary" id="approveBtn">Approve</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post Notice -->
+  <div id="noticeModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="noticeTitle">
+    <div class="modal-card" style="max-width:640px;">
+      <button class="modal-close" id="noticeClose" aria-label="Close">×</button>
+      <h2 id="noticeTitle">Post a Notice</h2>
+      <form id="noticeForm" class="stack">
+        <label class="field"><span>Title</span><input id="noticeTitleInput" type="text" placeholder="Short headline" required /></label>
+        <label class="field"><span>Body</span><textarea id="noticeBodyInput" placeholder="Write the announcement..." required></textarea></label>
+        <div class="actions-right">
+          <button class="btn-ghost" type="button" id="noticeCancel">Cancel</button>
+          <button class="btn-primary" type="submit">Publish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ============== Resale Items Modal (Warden) ============== -->
+<div id="resaleModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="rsTitle">
+  <div class="modal-card widest">
+    <button class="modal-close" id="rsClose" aria-label="Close">×</button>
+
+    <h2 id="rsTitle">Resale Items</h2>
+    <p class="breadcrumb">Dashboard • Resale Items</p>
+
+    <!-- Top toolbar -->
+    <div class="rs-toolbar" style="margin-bottom:12px;">
+      <input type="text" id="rsSearch" placeholder="🔍 Search for an item..." />
+      <select id="rsCategory">
+        <option value="all">Filter by Category</option>
+        <option value="electronics">Electronics</option>
+        <option value="books">Books</option>
+        <option value="furniture">Furniture</option>
+        <option value="misc">Misc</option>
+      </select>
+      <select id="rsSort">
+        <option value="new">Sort by: Newest</option>
+        <option value="priceAsc">Price: Low → High</option>
+        <option value="priceDesc">Price: High → Low</option>
+        <option value="old">Oldest</option>
+      </select>
+      <button class="btn-primary" id="rsPostBtn">+ Post Item</button>
+    </div>
+
+    <!-- Items grid -->
+    <div class="rs-grid" id="rsGrid"><!-- filled by JS --></div>
+  </div>
+</div>
+
+<!-- ========== Resale: View Details (mini modal) ========== -->
+<div id="rsDetailsModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="rsDetTitle">
+  <div class="modal-card" style="max-width:640px">
+    <button class="modal-close" id="rsDetClose" aria-label="Close">×</button>
+    <h2 id="rsDetTitle">Item Details</h2>
+    <div class="rs-details">
+      <img id="rsDetImg" alt="Item image" style="display:none" />
+      <div class="rs-det-info">
+        <h3 id="rsDetName"></h3>
+        <p class="price" id="rsDetPrice"></p>
+        <p class="muted" id="rsDetOwner"></p>
+        <p id="rsDetDesc"></p>
+        <div class="actions">
+          <button class="btn-primary" id="rsMarkSold">Mark as Sold</button>
+          <button class="btn-ghost" id="rsDetCloseBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Resale: Post Item (mini modal) ========== -->
+<div id="postItemModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="piTitle">
+  <div class="modal-card" style="max-width:640px">
+    <button class="modal-close" id="piClose" aria-label="Close">×</button>
+    <h2 id="piTitle">Post a New Item</h2>
+    <form id="piForm" class="rs-post-form" autocomplete="off">
+      <label class="field"><span>Item Name</span>
+        <input id="piName" type="text" required placeholder="e.g., Study Table">
+      </label>
+      <label class="field"><span>Price (₹)</span>
+        <input id="piPrice" type="number" min="0" step="1" required placeholder="e.g., 1200">
+      </label>
+      <label class="field"><span>Category</span>
+        <select id="piCategory" required>
+          <option value="electronics">Electronics</option>
+          <option value="books">Books</option>
+          <option value="furniture">Furniture</option>
+          <option value="misc" selected>Misc</option>
+        </select>
+      </label>
+      <label class="field"><span>Description</span>
+        <textarea id="piDesc" rows="3" placeholder="Short description"></textarea>
+      </label>
+      <label class="field"><span>Image (optional)</span>
+        <input id="piImg" type="file" accept=".jpg,.jpeg,.png">
+      </label>
+      <div class="actions">
+        <button type="submit" class="btn-primary">Post Item</button>
+        <button type="button" class="btn-ghost" id="piReset">Reset</button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- ============== modal end ============== -->
+
+
+  <script src="warden.js" defer></script>
+</body>
+</html>

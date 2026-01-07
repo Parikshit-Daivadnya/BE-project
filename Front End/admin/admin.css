@@ -1,0 +1,66 @@
+/* admin.css — polished to exactly match Warden look & spacing,
+   but with clearer KPIs, grid, and responsive behavior */
+
+:root {
+  --accent: #0a74ff;
+  --muted: #6b7280;
+  --card-bg: #fff;
+}
+
+/* Layout reuses warden.css but add admin-specific refinements */
+.layout { display:flex; gap:18px; padding:18px; align-items:flex-start; }
+.sidebar { width:220px; }
+.main { flex:1; min-height:600px; }
+
+/* KPI row (match visual weight of warden cards) */
+.kpi-row { display:flex; gap:12px; margin-top:12px; }
+.kpi-card {
+  flex:1;
+  background:var(--card-bg);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 8px 24px rgba(12,36,90,0.06);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.kpi-value { font-size:24px; font-weight:800; color:var(--accent); }
+.kpi-label { color:var(--muted); font-weight:600; }
+
+/* Dashboard grid */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+
+/* Block chart styling */
+.block-chart { display:flex; align-items:flex-end; gap:12px; padding:8px; min-height:130px; }
+.block-bar { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px; background:#f6fbff; border-radius:10px; padding:10px; }
+.block-bar .bar-fill { width:60%; border-radius:6px; background:var(--accent); }
+
+/* Tables */
+.table-wrapper { overflow:auto; }
+.table-wrapper table { width:100%; border-collapse:collapse; }
+.table-wrapper th, .table-wrapper td { padding:10px 12px; border-bottom:1px solid #f1f5f9; text-align:left; }
+.table-wrapper th { background:#fbfdff; font-weight:700; color:var(--muted); }
+
+/* Resale grid */
+.rs-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.rs-card { background:#fff; border-radius:12px; padding:12px; border:1px solid #eef6ff; box-shadow:0 8px 20px rgba(10,80,150,0.03); }
+
+/* Quick actions */
+.quick-actions button { min-width:150px; }
+
+/* Activity list */
+.activity-list { list-style:none; padding-left:0; margin:0; }
+.activity-list li { padding:8px 0; border-bottom:1px dashed #eef1fb; color:var(--muted); }
+
+/* Responsive */
+@media (max-width:1000px) {
+  .layout { flex-direction:column; }
+  .sidebar { width:100%; order:2; }
+  .main { order:1; }
+  .grid-2 { grid-template-columns:1fr; }
+  .rs-grid { grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:600px) {
+  .rs-grid { grid-template-columns:1fr; }
+  .kpi-row { flex-direction:column; }
+}
