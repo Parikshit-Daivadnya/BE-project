@@ -22,6 +22,9 @@ import com.hostelcomplaintresolver.backend.repository.UserRepository;
 
 @Service
 public class ComplaintService {
+    @Autowired
+    private EmailService emailService;
+
 
     @Autowired
     private BlockchainService blockchainService;
@@ -58,6 +61,17 @@ public class ComplaintService {
                 "RAISED",
                 "Complaint raised by " + student.getName() + " for room " + savedComplaint.getRoomNumber()
         );
+
+        emailService.sendEmail(
+                student.getEmail(),
+                "Complaint Raised Successfully",
+                "Dear " + student.getName() + ",\n\n" +
+                        "Your complaint regarding '" + complaint.getCategory() + "' has been successfully raised.\n" +
+                        "Complaint ID: " + complaint.getId() + "\n\n" +
+                        "We'll notify you as soon as it's assigned or resolved.\n\n" +
+                        "Regards,\nHostel Complaint Resolver System"
+        );
+
 
         return savedComplaint;
     }
@@ -103,6 +117,14 @@ public class ComplaintService {
                 "ASSIGNED",
                 "Complaint assigned to staff " + staff.getName() + " by system or warden"
         );
+        emailService.sendEmail(
+                complaint.getStudent().getEmail(),
+                "Complaint Assigned to Staff",
+                "Dear " + complaint.getStudent().getName() + ",\n\n" +
+                        "Your complaint (ID: " + complaint.getId() + ") has been assigned to our staff: " +
+                        staff.getName() + ".\nWe'll notify you when it's resolved.\n\n" +
+                        "Regards,\nHostel Complaint Resolver System"
+        );
 
         return updatedComplaint;
     }
@@ -140,6 +162,16 @@ public class ComplaintService {
                 "Complaint resolved by staff " + staff.getName()
         );
 
+        emailService.sendEmail(
+                complaint.getStudent().getEmail(),
+                "Complaint Resolved",
+                "Dear " + complaint.getStudent().getName() + ",\n\n" +
+                        "Your complaint (ID: " + complaint.getId() + ") has been marked as resolved by " +
+                        staff.getName() + ".\nPlease check and provide feedback.\n\n" +
+                        "Regards,\nHostel Complaint Resolver System"
+        );
+
+
         return resolvedComplaint;
     }
 
@@ -172,6 +204,15 @@ public class ComplaintService {
                 complaint.getStudent().getUserId(),
                 "CLOSED",
                 "Feedback submitted and complaint closed by " + complaint.getStudent().getName()
+        );
+
+        emailService.sendEmail(
+                complaint.getStudent().getEmail(),
+                "Feedback Submitted Successfully",
+                "Dear " + complaint.getStudent().getName() + ",\n\n" +
+                        "Thank you for submitting your feedback for complaint ID: " + complaint.getId() + ".\n" +
+                        "Your response helps us improve our services.\n\n" +
+                        "Regards,\nHostel Complaint Resolver System"
         );
 
         return closedComplaint;
