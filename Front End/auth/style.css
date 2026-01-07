@@ -1,0 +1,99 @@
+* { box-sizing: border-box; font-family: "Poppins", sans-serif; }
+
+body {
+  margin: 0; height: 100vh;
+  display: flex; justify-content: center; align-items: center;
+  background: linear-gradient(to right, #e6f0ff, #b3d1ff);
+  overflow: hidden; /* prevent page scroll */
+}
+
+/* -------- AUTH CARD -------- */
+.auth-container {
+  background: #fff;
+  width: 420px; max-width: 95%;
+  height: 85vh; /* fixed card height */
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0,0,0,.1);
+  display: flex; flex-direction: column;
+}
+
+.tabs { display: flex; flex-shrink: 0; margin-bottom: .8rem; }
+.tab {
+  flex: 1; padding: .6rem; background: #d6e9ff; border: none;
+  border-radius: 10px 10px 0 0; font-weight: 700; color: #333;
+  cursor: pointer; transition: .3s;
+}
+.tab.active { background: #007bff; color: #fff; }
+
+/* -------- FORMS -------- */
+.form {
+  display: none; flex: 1;
+  overflow-y: auto; /* scroll inside card */
+  padding-right: .4rem;
+}
+.form.active { display: flex; flex-direction: column; }
+
+.form::-webkit-scrollbar { width: 6px; }
+.form::-webkit-scrollbar-thumb { background: #b0cfff; border-radius: 6px; }
+/* remove blue bar strip at bottom */
+.form::-webkit-scrollbar-track { background: transparent; }
+.form { scrollbar-color: #b0cfff transparent; } /* Firefox */
+
+h2 { text-align: center; color: #007bff; margin: .5rem 0 1rem; flex-shrink: 0; }
+
+label { margin-top: .6rem; font-weight: 500; font-size: .9rem; }
+
+/* text-like inputs (not checkboxes/radios) */
+input:not([type="checkbox"]):not([type="radio"]), select {
+  width: 100%;
+  padding: .55rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: .9rem;
+}
+input:focus, select:focus { border-color: #007bff; outline: none; }
+
+/* keep checkbox inline with its label text */
+input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.checkbox { font-size: .85rem; margin-top: .6rem; }
+
+.btn {
+  background: #007bff; color: white; border: none;
+  padding: .7rem; width: 100%; border-radius: 8px;
+  margin-top: 1rem; cursor: pointer; font-weight: 700;
+  transition: background .3s;
+}
+.btn:hover { background: #005ecb; }
+
+.switch-text { text-align: center; margin-top: 1rem; font-size: .9rem; }
+
+.role-section { margin-top: .5rem; }
+.role-section.hidden { display: none; }
+.section-title { font-weight: 700; color: #007bff; margin-bottom: .4rem; }
+
+.hint { font-size: .8rem; color: #555; }
+
+hr { border: none; border-top: 1px solid #eee; margin: 1rem 0; }
+
+/* Vertical layout for Remember Me + Forgot Password */
+.options-vertical {
+  display: flex; flex-direction: column; align-items: flex-start;
+  margin-top: .6rem; gap: .3rem;
+}
+.options-vertical .forgot { font-size: .85rem; color: #007bff; text-decoration: none; }
+.options-vertical .forgot:hover { text-decoration: underline; }
+
+/* -------- RESPONSIVE -------- */
+@media (max-height: 700px) { .auth-container { height: 90vh; } }
+@media (max-width: 480px) {
+  .auth-container { width: 95%; height: 90vh; padding: 1rem; }
+  h2 { font-size: 1.1rem; }
+  label { font-size: .85rem; }
+  input, select { font-size: .85rem; }
+}

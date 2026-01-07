@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DHCR • Admin Dashboard</title>
+
+  <!-- Use the exact same Warden stylesheet so layout & visuals match exactly -->
+  <link rel="stylesheet" href="../warden/warden.css" />
+  <!-- Small admin-only overrides if necessary -->
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ===== Sidebar (same as Warden) ===== -->
+    <aside class="sidebar">
+      <div class="brand">DHCR</div>
+      <nav>
+        <button class="nav-link active" data-view="dashboard">🏠 Dashboard</button>
+        <button class="nav-link" data-view="users">👥 Users</button>
+        <button class="nav-link" data-view="complaints">📋 Complaints</button>
+        <button class="nav-link" data-view="proofs">🖼️ Proofs</button>
+        <button class="nav-link" data-view="notices">📢 Notices</button>
+        <button class="nav-link" data-view="resale">🪙 Resale Market</button>
+        <button class="nav-link" data-view="settings">⚙️ Settings</button>
+      </nav>
+    </aside>
+
+    <!-- ===== Main (same structure as Warden) ===== -->
+    <main class="main">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <h1>Admin Dashboard</h1>
+        <div class="actions">
+          <span class="welcome">Welcome, <strong id="adminName">[Admin]</strong></span>
+          <button id="notifBtn" class="icon-btn" title="Notifications">🔔</button>
+          <button id="profileBtn" class="icon-btn" title="Profile">👤</button>
+          <button id="logoutBtn" class="btn-outline">Logout</button>
+        </div>
+      </header>
+
+      <!-- ====== VIEW: Dashboard (Warden layout preserved) ====== -->
+      <section id="view-dashboard" class="view active">
+        <!-- KPI row -->
+        <div class="kpis">
+          <article class="kpi"><p class="label">Total Users</p><p class="value" id="kpiTotalUsers">0</p></article>
+          <article class="kpi"><p class="label">Open Complaints</p><p class="value" id="kpiOpenComplaints">0</p></article>
+          <article class="kpi"><p class="label">Avg. Resolution (days)</p><p class="value" id="kpiAvgRes">0.0</p></article>
+          <article class="kpi"><p class="label">Pending Approvals</p><p class="value" id="kpiPending">0</p></article>
+        </div>
+
+        <!-- Single Quick Actions card (keeps same sizing as Warden grid) -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h2>Quick Actions</h2></div>
+            <div style="margin-top:10px;">
+              <button class="btn-primary" id="qaManageUsers">Manage Users</button>
+              <button class="btn-ghost" id="qaPostNotice">Post Global Announcement</button>
+              <button class="btn-ghost" id="qaExport">Export Complaints</button>
+              <button class="btn-ghost" id="qaModerateResale">Moderate Resale</button>
+            </div>
+            <p class="muted" style="margin-top:12px;">Use these shortcuts to manage users, notices, complaints and resale listings.</p>
+          </div>
+
+          <!-- keep a blank card to preserve the two-column rhythm (same as Warden) -->
+          <div class="card">
+            <div class="card-head"><h2>Overview</h2></div>
+            <p class="muted">Admin quick overview. Use the left navigation to open management tools.</p>
+          </div>
+        </div>
+
+        <!-- Keep spacing consistent with Warden -->
+        <div class="card" style="margin-top:12px;">
+          <div class="card-head between">
+            <h2>Recent Admin Activity</h2>
+            <div class="muted">—</div>
+          </div>
+          <ul id="adminRecentList" class="list"></ul>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Users (admin specific) ====== -->
+      <section id="view-users" class="view">
+        <div class="card">
+          <div class="card-head between">
+            <h2>User Management</h2>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="userSearch" placeholder="Search users..." style="padding:.6rem .8rem; border-radius:10px; border:1px solid #d8e2ff;">
+              <select id="userRoleFilter" style="padding:.6rem .8rem; border-radius:10px; border:1px solid #d8e2ff;">
+                <option value="all">All roles</option>
+                <option value="student">Student</option>
+                <option value="warden">Warden</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button class="btn-primary" id="addUserBtn">+ Add user</button>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:12px;">
+            <table class="table">
+              <thead>
+                <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Block/Room</th><th>Active</th><th>Action</th></tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Complaints (same as Warden) ====== -->
+      <section id="view-complaints" class="view">
+        <div class="card">
+          <div class="card-head between">
+            <h2>All Complaints</h2>
+            <div class="filters">
+              <select id="filterStatusAdmin">
+                <option value="all">All</option>
+                <option value="new">New</option>
+                <option value="assigned">Assigned</option>
+                <option value="progress">In Progress</option>
+                <option value="pendingApproval">Pending Approval</option>
+                <option value="resolved">Resolved</option>
+                <option value="escalated">Escalated</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr><th>ID</th><th>Type</th><th>Title</th><th>Room</th><th>Slot</th><th>Status</th><th>Staff</th><th>Action</th></tr>
+              </thead>
+              <tbody id="adminComplaintsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Proofs (same UI as Warden) ====== -->
+      <section id="view-proofs" class="view">
+        <div class="card">
+          <div class="card-head between">
+            <h2>Proofs Awaiting Review</h2>
+            <p class="muted">Click a card to open Approve / Reject.</p>
+          </div>
+          <div id="proofGridAdmin" class="proof-queue"></div>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Notices (same) ====== -->
+      <section id="view-notices" class="view">
+        <div class="card">
+          <div class="card-head between">
+            <h2>Notices</h2>
+            <button id="postNoticeBtnAdmin" class="btn-primary">+ Post a New Notice</button>
+          </div>
+          <ul id="adminNoticesList" class="list"></ul>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Resale (same) ====== -->
+      <section id="view-resale" class="view">
+        <div class="card">
+          <div class="card-head between">
+            <h2>Resale Market</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input id="rsSearchAdmin" type="text" placeholder="🔍 Search for an item..." style="padding:.6rem .8rem; border-radius:10px; border:1px solid #d8e2ff;">
+              <select id="rsCategoryAdmin" style="padding:.6rem .8rem; border-radius:10px; border:1px solid #d8e2ff;">
+                <option value="all">Filter by Category</option>
+                <option value="electronics">Electronics</option>
+                <option value="books">Books</option>
+                <option value="furniture">Furniture</option>
+                <option value="misc">Misc</option>
+              </select>
+              <select id="rsSortAdmin" style="padding:.6rem .8rem; border-radius:10px; border:1px solid #d8e2ff;">
+                <option value="new">Sort by: Newest</option>
+                <option value="priceAsc">Price: Low → High</option>
+                <option value="priceDesc">Price: High → Low</option>
+              </select>
+              <button class="btn-primary" id="rsPostBtnAdmin">+ Post Item</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div id="rsGridAdmin" class="rs-grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== VIEW: Settings ====== -->
+      <section id="view-settings" class="view">
+        <div class="card">
+          <div class="card-head"><h2>Settings</h2></div>
+          <p class="muted">Role & permission configuration (skeleton)</p>
+        </div>
+      </section>
+
+      <footer class="footer">© <span id="yearAdmin"></span> DHCR</footer>
+    </main>
+  </div>
+
+  <!-- ===== Modals: use the same markup & ids as Warden to keep behavior identical ===== -->
+  <div id="assignModalAdmin" class="modal" aria-hidden="true" role="dialog">
+    <div class="modal-card" style="max-width:520px;">
+      <button class="modal-close" id="assignCloseAdmin">×</button>
+      <h2>Assign Staff</h2>
+      <form id="assignFormAdmin" class="stack">
+        <input type="hidden" id="assignComplaintIdAdmin" />
+        <label class="field"><span>Choose Staff</span><select id="assignStaffAdmin"></select></label>
+        <div class="actions-right">
+          <button class="btn-ghost" type="button" id="assignCancelAdmin">Cancel</button>
+          <button class="btn-primary" type="submit">Assign</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="approveModalAdmin" class="modal" aria-hidden="true" role="dialog">
+    <div class="modal-card" style="max-width:720px;">
+      <button class="modal-close" id="approveCloseAdmin">×</button>
+      <h2>Review Resolution Proof</h2>
+      <div class="stack">
+        <div id="approveSummaryAdmin"></div>
+        <div class="img-preview" id="approvePreviewAdmin">No image</div>
+        <div class="actions-right">
+          <button class="btn-ghost" id="rejectBtnAdmin">Reject</button>
+          <button class="btn-primary" id="approveBtnAdmin">Approve</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="noticeModalAdmin" class="modal" aria-hidden="true" role="dialog">
+    <div class="modal-card" style="max-width:640px;">
+      <button class="modal-close" id="noticeCloseAdmin">×</button>
+      <h2>Post a Notice</h2>
+      <form id="noticeFormAdmin" class="stack">
+        <label class="field"><span>Title</span><input id="noticeTitleInputAdmin" type="text" required /></label>
+        <label class="field"><span>Body</span><textarea id="noticeBodyInputAdmin" rows="4" required></textarea></label>
+        <div class="actions-right">
+          <button class="btn-ghost" type="button" id="noticeCancelAdmin">Cancel</button>
+          <button class="btn-primary" type="submit">Publish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Resale details modal (same as warden) -->
+  <div id="rsDetailsModalAdmin" class="modal" aria-hidden="true" role="dialog">
+    <div class="modal-card" style="max-width:640px">
+      <button class="modal-close" id="rsDetCloseAdmin">×</button>
+      <h2>Item Details</h2>
+      <div class="rs-details">
+        <img id="rsDetImgAdmin" alt="Item image" style="display:none" />
+        <div class="rs-det-info">
+          <h3 id="rsDetNameAdmin"></h3>
+          <p class="price" id="rsDetPriceAdmin"></p>
+          <p class="muted" id="rsDetOwnerAdmin"></p>
+          <p id="rsDetDescAdmin"></p>
+          <div class="actions">
+            <button class="btn-primary" id="rsMarkSoldAdmin">Mark as Sold</button>
+            <button class="btn-ghost" id="rsDetCloseBtnAdmin">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post Item modal -->
+  <div id="postItemModalAdmin" class="modal" aria-hidden="true" role="dialog">
+    <div class="modal-card" style="max-width:640px">
+      <button class="modal-close" id="piCloseAdmin">×</button>
+      <h2>Post a New Item</h2>
+      <form id="piFormAdmin" class="rs-post-form" autocomplete="off">
+        <label class="field"><span>Item Name</span><input id="piNameAdmin" type="text" required></label>
+        <label class="field"><span>Price (₹)</span><input id="piPriceAdmin" type="number" min="0" step="1" required></label>
+        <label class="field"><span>Category</span>
+          <select id="piCategoryAdmin" required>
+            <option value="electronics">Electronics</option>
+            <option value="books">Books</option>
+            <option value="furniture">Furniture</option>
+            <option value="misc" selected>Misc</option>
+          </select>
+        </label>
+        <label class="field"><span>Description</span><textarea id="piDescAdmin" rows="3"></textarea></label>
+        <label class="field"><span>Image (optional)</span><input id="piImgAdmin" type="file" accept=".jpg,.jpeg,.png"></label>
+        <div class="actions">
+          <button type="submit" class="btn-primary">Post Item</button>
+          <button type="button" class="btn-ghost" id="piResetAdmin">Reset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="admin.js" defer></script>
+</body>
+</html>
