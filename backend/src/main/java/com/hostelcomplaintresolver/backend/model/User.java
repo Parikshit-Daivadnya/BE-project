@@ -1,62 +1,20 @@
 package com.hostelcomplaintresolver.backend.model;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-
-
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "users") // This specifies the table name in the database
+@Table(name = "users")
 public class User {
-
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    // In User.java
-    @JsonIgnore
-    @Column(name = "password_reset_token")
-    private String passwordResetToken;
-
-    public String getPasswordResetToken() {
-        return passwordResetToken;
-    }
-
-    public void setPasswordResetToken(String passwordResetToken) {
-        this.passwordResetToken = passwordResetToken;
-    }
-
-    public LocalDateTime getPasswordResetTokenExpiry() {
-        return passwordResetTokenExpiry;
-    }
-
-    public void setPasswordResetTokenExpiry(LocalDateTime passwordResetTokenExpiry) {
-        this.passwordResetTokenExpiry = passwordResetTokenExpiry;
-    }
-
-    @JsonIgnore
-    @Column(name = "password_reset_token_expiry")
-    private LocalDateTime passwordResetTokenExpiry;
-
-// Remember to generate getters and setters for these new fields
 
     @Id
     @Column(name = "user_id", nullable = false, unique = true)
-    private String userId; // IRN or Role-based ID
-
-
+    private String userId;
 
     @Column(nullable = false)
     private String name;
@@ -68,77 +26,109 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING) // Stores the enum as a string (e.g., "STUDENT")
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
 
-    @Column(name = "room_number") // Use snake_case for column names
+    @Column(name = "mobile")
+    private String mobile;
+
+    @Column(name = "permanent_address", length = 500)
+    private String permanentAddress;
+
+    // --- Student Fields ---
+    @Column(name = "hostel_name")
+    private String hostelName;      // ✅ New
+
+    @Column(name = "room_number")
     private String roomNumber;
 
-    // --- Getters and Setters ---
-    // You can generate these automatically in your IDE (Right-click -> Generate -> Getters and Setters)
+    @Column(name = "course")
+    private String course;          // ✅ New
 
-    public String getUserId() {
-        return userId;
-    }
+    @Column(name = "student_year")
+    private String studentYear;     // ✅ New
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    @Column(name = "department")
+    private String department;      // ✅ New
 
-    public String getName() {
-        return name;
-    }
+    @Column(name = "parent_mobile")
+    private String parentMobile;    // ✅ New
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    // --- Staff Fields ---
+    @Column(name = "staff_category")
+    private String staffCategory;
 
-    public String getEmail() {
-        return email;
-    }
+    // --- System Fields ---
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    public String getPassword() {
-        return password;
-    }
+    @JsonIgnore
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    @JsonIgnore
+    @Column(name = "password_reset_token_expiry")
+    private LocalDateTime passwordResetTokenExpiry;
 
-    public Role getRole() {
-        return role;
-    }
+    // ---------------- GETTERS AND SETTERS ----------------
 
-    public void setRole(Role role) {
-        this.role = role;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public String getRoomNumber() {
-        return roomNumber;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setRoomNumber(String roomNumber) {
-        this.roomNumber = roomNumber;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
+    public String getMobile() { return mobile; }
+    public void setMobile(String mobile) { this.mobile = mobile; }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public String getPermanentAddress() { return permanentAddress; }
+    public void setPermanentAddress(String permanentAddress) { this.permanentAddress = permanentAddress; }
+
+    public String getHostelName() { return hostelName; }
+    public void setHostelName(String hostelName) { this.hostelName = hostelName; }
+
+    public String getRoomNumber() { return roomNumber; }
+    public void setRoomNumber(String roomNumber) { this.roomNumber = roomNumber; }
+
+    public String getCourse() { return course; }
+    public void setCourse(String course) { this.course = course; }
+
+    public String getStudentYear() { return studentYear; }
+    public void setStudentYear(String studentYear) { this.studentYear = studentYear; }
+
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
+
+    public String getParentMobile() { return parentMobile; }
+    public void setParentMobile(String parentMobile) { this.parentMobile = parentMobile; }
+
+    public String getStaffCategory() { return staffCategory; }
+    public void setStaffCategory(String staffCategory) { this.staffCategory = staffCategory; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getPasswordResetToken() { return passwordResetToken; }
+    public void setPasswordResetToken(String token) { this.passwordResetToken = token; }
+
+    public LocalDateTime getPasswordResetTokenExpiry() { return passwordResetTokenExpiry; }
+    public void setPasswordResetTokenExpiry(LocalDateTime expiry) { this.passwordResetTokenExpiry = expiry; }
 }

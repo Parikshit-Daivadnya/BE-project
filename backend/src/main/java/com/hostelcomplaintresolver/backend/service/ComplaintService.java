@@ -25,7 +25,6 @@ public class ComplaintService {
     @Autowired
     private EmailService emailService;
 
-
     @Autowired
     private BlockchainService blockchainService;
 
@@ -37,11 +36,13 @@ public class ComplaintService {
 
     /**
      * Creates and saves a new complaint raised by a student.
+     * Changed param from studentEmail to studentId to match Controller.
      */
-    public Complaint createComplaint(CreateComplaintRequest createComplaintRequest, String studentEmail) {
+    public Complaint createComplaint(CreateComplaintRequest createComplaintRequest, String studentId) {
 
-        User student = userRepository.findByEmail(studentEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("Student not found with email: " + studentEmail));
+        // ✅ FIX: Find by ID, not Email
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new UsernameNotFoundException("Student not found with ID: " + studentId));
 
         Complaint complaint = new Complaint();
         complaint.setCategory(createComplaintRequest.getCategory());
@@ -72,7 +73,6 @@ public class ComplaintService {
                         "Regards,\nHostel Complaint Resolver System"
         );
 
-
         return savedComplaint;
     }
 
@@ -87,8 +87,8 @@ public class ComplaintService {
     /**
      * Retrieves all complaints for a specific student.
      */
-    public List<Complaint> getComplaintsByStudent(String studentEmail) {
-        return complaintRepository.findByStudent_Email(studentEmail);
+    public List<Complaint> getComplaintsByStudent(String studentId) {
+        return complaintRepository.findByStudent_UserId(studentId);
     }
 
     /**
@@ -117,6 +117,8 @@ public class ComplaintService {
                 "ASSIGNED",
                 "Complaint assigned to staff " + staff.getName() + " by system or warden"
         );
+
+        // Notify Student
         emailService.sendEmail(
                 complaint.getStudent().getEmail(),
                 "Complaint Assigned to Staff",
@@ -126,25 +128,35 @@ public class ComplaintService {
                         "Regards,\nHostel Complaint Resolver System"
         );
 
+        // Notify Staff
+        emailService.sendEmail(
+                staff.getEmail(),
+                "New Task Assigned",
+                "Hello " + staff.getName() + ",\n\nYou have been assigned a new complaint.\n" +
+                        "ID: " + complaint.getId() + "\nCategory: " + complaint.getCategory()
+        );
+
         return updatedComplaint;
     }
 
     /**
-     * Retrieves all complaints assigned to a specific staff member.
+     * ✅ FIX: Updated to match Controller call (getAssignedComplaints) and use ID
      */
-    public List<Complaint> getComplaintsByStaff(String staffEmail) {
-        return complaintRepository.findByStaff_Email(staffEmail);
+    public List<Complaint> getAssignedComplaints(String staffId) {
+        return complaintRepository.findByStaff_UserId(staffId);
     }
 
     /**
      * Marks a complaint as resolved by the assigned staff member.
+     * Changed param from staffEmail to staffId
      */
     @Transactional
-    public Complaint resolveComplaint(Long complaintId, String staffEmail) {
+    public Complaint resolveComplaint(Long complaintId, String staffId) {
         Complaint complaint = complaintRepository.findById(complaintId)
                 .orElseThrow(() -> new RuntimeException("Complaint not found"));
 
-        User staff = userRepository.findByEmail(staffEmail)
+        // ✅ FIX: Find by ID
+        User staff = userRepository.findById(staffId)
                 .orElseThrow(() -> new UsernameNotFoundException("Staff member not found"));
 
         if (complaint.getStaff() == null || !complaint.getStaff().getUserId().equals(staff.getUserId())) {
@@ -171,20 +183,21 @@ public class ComplaintService {
                         "Regards,\nHostel Complaint Resolver System"
         );
 
-
         return resolvedComplaint;
     }
 
     /**
      * Submits feedback and rating for a resolved complaint.
+     * Changed param from studentEmail to studentId
      */
     @Transactional
-    public Complaint submitFeedback(Long complaintId, FeedbackRequest feedbackRequest, String studentEmail) {
+    public Complaint submitFeedback(Long complaintId, FeedbackRequest feedbackRequest, String studentId) {
 
         Complaint complaint = complaintRepository.findById(complaintId)
                 .orElseThrow(() -> new RuntimeException("Complaint not found with ID: " + complaintId));
 
-        if (!complaint.getStudent().getEmail().equals(studentEmail)) {
+        // ✅ FIX: Compare IDs, not Emails
+        if (!complaint.getStudent().getUserId().equals(studentId)) {
             throw new SecurityException("You are not authorized to submit feedback for this complaint.");
         }
 
@@ -218,9 +231,6 @@ public class ComplaintService {
         return closedComplaint;
     }
 
-    /**
-     * Determines complaint priority based on category.
-     */
     private Priority getPriorityForCategory(String category) {
         if (category == null) {
             return Priority.LOW; // Default

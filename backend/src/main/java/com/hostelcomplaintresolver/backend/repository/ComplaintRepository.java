@@ -14,16 +14,23 @@ import java.util.List;
 public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
 
 
-        // Find complaints raised by a specific student
-        List<Complaint> findByStudent_UserId(String studentId);
+//        // Find complaints raised by a specific student
+//        List<Complaint> findByStudent_UserId(String studentId);
+//
+//        // Find complaints assigned to a particular staff member
+//        List<Complaint> findByStaff_UserId(String staffId);
+//
+//        // Find complaints assigned to a particular admin/warden
+//        List<Complaint> findByAssignedTo_UserId(String assignedToId);
 
-        // Find complaints assigned to a particular staff member
-        List<Complaint> findByStaff_UserId(String staffId);
+    // ✅ Finds complaints where student.userId == studentId
+    List<Complaint> findByStudent_UserId(String studentId);
 
-        // Find complaints assigned to a particular admin/warden
-        List<Complaint> findByAssignedTo_UserId(String assignedToId);
+    // ✅ Finds complaints where staff.userId == staffId (THIS WAS MISSING)
+    List<Complaint> findByStaff_UserId(String staffId);
 
-
+    // ✅ Finds complaints assigned to Warden/Admin
+    List<Complaint> findByAssignedTo_UserId(String assignedToId);
 
 
         /**

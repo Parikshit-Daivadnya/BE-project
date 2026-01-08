@@ -22,16 +22,16 @@ public class ComplaintController {
     @Autowired
     private ComplaintService complaintService;
 
-    // Create a new complaint. Principal.getName() is the authenticated email.
+    // ✅ STUDENT: Create a new complaint
     @PostMapping
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> createNewComplaint(
             @Valid @RequestBody CreateComplaintRequest createComplaintRequest,
             Principal principal) {
 
-        String studentEmail = principal.getName();
+        String studentId = principal.getName(); // Contains "IRN..."
         try {
-            Complaint saved = complaintService.createComplaint(createComplaintRequest, studentEmail);
+            Complaint saved = complaintService.createComplaint(createComplaintRequest, studentId);
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -39,16 +39,26 @@ public class ComplaintController {
         }
     }
 
-    // Students fetch their own complaints
+    // ✅ STUDENT: Fetch their own complaints
     @GetMapping("/my-complaints")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<Complaint>> getMyComplaints(Principal principal) {
-        String studentEmail = principal.getName();
-        List<Complaint> complaints = complaintService.getComplaintsByStudent(studentEmail);
+        String studentId = principal.getName();
+        List<Complaint> complaints = complaintService.getComplaintsByStudent(studentId);
         return ResponseEntity.ok(complaints);
     }
 
-    // Warden/Admin fetch all complaints
+    // ✅ STAFF: Fetch complaints assigned to them
+    // (I removed the duplicate method and the raw repository call from here)
+    @GetMapping("/my-assigned")
+    @PreAuthorize("hasRole('STAFF')")
+    public ResponseEntity<?> getAssignedComplaints(Principal principal) {
+        String staffId = principal.getName(); // This is "STF001"
+        // Ensure your ComplaintService has 'getAssignedComplaints' or 'getComplaintsByStaff'
+        return ResponseEntity.ok(complaintService.getAssignedComplaints(staffId));
+    }
+
+    // ✅ WARDEN/ADMIN: Fetch all complaints
     @GetMapping
     @PreAuthorize("hasAnyRole('WARDEN','ADMIN')")
     public ResponseEntity<List<Complaint>> getAllComplaints() {
@@ -56,7 +66,7 @@ public class ComplaintController {
         return ResponseEntity.ok(complaints);
     }
 
-    // Assign a complaint to staff (staffId is user_id string)
+    // ✅ WARDEN/ADMIN: Assign a complaint to staff
     @PutMapping("/{complaintId}/assign")
     @PreAuthorize("hasAnyRole('WARDEN','ADMIN')")
     public ResponseEntity<?> assignComplaint(@PathVariable Long complaintId,
@@ -70,22 +80,13 @@ public class ComplaintController {
         }
     }
 
-    // Staff fetch complaints assigned to them (principal is staff's email)
-    @GetMapping("/my-assigned")
-    @PreAuthorize("hasRole('STAFF')")
-    public ResponseEntity<List<Complaint>> getMyAssignedComplaints(Principal principal) {
-        String staffEmail = principal.getName();
-        List<Complaint> complaints = complaintService.getComplaintsByStaff(staffEmail);
-        return ResponseEntity.ok(complaints);
-    }
-
-    // Staff resolves a complaint
+    // ✅ STAFF: Resolve a complaint
     @PutMapping("/{complaintId}/resolve")
     @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<?> resolveComplaint(@PathVariable Long complaintId, Principal principal) {
-        String staffEmail = principal.getName();
+        String staffId = principal.getName(); // Use ID now
         try {
-            Complaint updatedComplaint = complaintService.resolveComplaint(complaintId, staffEmail);
+            Complaint updatedComplaint = complaintService.resolveComplaint(complaintId, staffId);
             return ResponseEntity.ok(updatedComplaint);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -93,15 +94,15 @@ public class ComplaintController {
         }
     }
 
-    // Student submits feedback for a complaint
+    // ✅ STUDENT: Submit feedback
     @PostMapping("/{complaintId}/feedback")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> submitFeedback(@PathVariable Long complaintId,
                                             @Valid @RequestBody FeedbackRequest feedbackRequest,
                                             Principal principal) {
-        String studentEmail = principal.getName();
+        String studentId = principal.getName(); // Use ID now
         try {
-            Complaint closedComplaint = complaintService.submitFeedback(complaintId, feedbackRequest, studentEmail);
+            Complaint closedComplaint = complaintService.submitFeedback(complaintId, feedbackRequest, studentId);
             return ResponseEntity.ok(closedComplaint);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

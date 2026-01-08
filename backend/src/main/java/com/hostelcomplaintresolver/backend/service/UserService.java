@@ -10,12 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
-
-
+import java.util.Random;
 
 @Service
 @Transactional
@@ -27,7 +24,10 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // ✅ REGISTER USER (Student enters IRN / others get generated ID)
+    @Autowired
+    private EmailService emailService;
+
+    // ✅ REGISTER USER
     public User registerUser(CreateUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already registered: " + request.getEmail());
@@ -38,25 +38,35 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
-        user.setRoomNumber(request.getRoomNumber());
+        user.setMobile(request.getMobile());
+        user.setPermanentAddress(request.getPermanentAddress());
 
-        // ✅ Set user_id manually (Student IRN or Role-based ID)
         String userId;
+
         if (request.getRole() == Role.STUDENT) {
             if (request.getIrn() == null || request.getIrn().isEmpty()) {
                 throw new IllegalArgumentException("IRN number is required for students.");
-
             }
             userId = request.getIrn();
+
+            user.setRoomNumber(request.getRoomNumber());
+            user.setHostelName(request.getHostelName()); // ✅ Now works
+            user.setCourse(request.getCourse());         // ✅ Now works
+            user.setStudentYear(request.getYear());      // ✅ Now works
+            user.setDepartment(request.getDepartment()); // ✅ Now works
+            user.setParentMobile(request.getParentMobile()); // ✅ Now works
+
         } else {
             userId = generateRoleBasedId(request.getRole());
+            if (request.getRole() == Role.STAFF) {
+                user.setStaffCategory(request.getStaffCategory()); // ✅ Now works
+            }
         }
 
         user.setUserId(userId);
         return userRepository.save(user);
     }
 
-    // ✅ Role-based ID Generator for Warden, Staff, Admin
     private String generateRoleBasedId(Role role) {
         String prefix = switch (role) {
             case WARDEN -> "WDN";
@@ -69,27 +79,33 @@ public class UserService {
         return prefix + String.format("%03d", count);
     }
 
-    // ✅ Fetch user by ID (String)
     public User getUserById(String userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
     }
 
-    // ✅ Generate Password Reset Token
     public void generatePasswordResetToken(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
 
-        String token = UUID.randomUUID().toString();
+        Random random = new Random();
+        int otp = 1000 + random.nextInt(9000);
+        String token = String.valueOf(otp);
+
         user.setPasswordResetToken(token);
-        user.setPasswordResetTokenExpiry(LocalDateTime.now().plusHours(1)); // 1-hour validity
+        user.setPasswordResetTokenExpiry(LocalDateTime.now().plusMinutes(5));
         userRepository.save(user);
 
-        // TODO: send email (for now print to console)
-        System.out.println("Password Reset Token for " + userEmail + ": " + token);
+        String subject = "Password Reset OTP";
+        String body = "Hello " + user.getName() + ",\n\n" +
+                "Your OTP for password reset is:\n\n" +
+                token + "\n\n" +
+                "This OTP is valid for 5 minutes.";
+
+        emailService.sendEmail(userEmail, subject, body);
+        System.out.println("✅ Email sent to " + userEmail);
     }
 
-    // ✅ Reset Password via Token
     public void resetPassword(String token, String newPassword) {
         User user = userRepository.findByPasswordResetToken(token)
                 .orElseThrow(() -> new RuntimeException("Invalid password reset token."));
@@ -104,7 +120,6 @@ public class UserService {
         userRepository.save(user);
     }
 
-    // ✅ Optional helper (login / validation)
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }

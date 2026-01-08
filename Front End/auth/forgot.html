@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DHCR | Reset Password</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Page specific styles */
+      #resetForm {
+        display: none;
+        flex-direction: column; /* Ensures inputs stack vertically */
+      }
+      .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 15px;
+        font-size: 0.9rem;
+        text-decoration: none;
+        color: #666;
+      }
+      .back-link:hover {
+        color: #007bff;
+      }
+      .status-msg {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        display: none;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .info-box {
+        background: #e7f3fe;
+        border-left: 4px solid #2196f3;
+        padding: 10px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-container" style="height: auto; min-height: 450px">
+      <div style="text-align: center; margin-bottom: 20px">
+        <h2 style="color: #007bff; margin: 0">Reset Password</h2>
+        <p style="color: #666; font-size: 0.9rem; margin-top: 5px">
+          Hostel Complaint Resolver
+        </p>
+      </div>
+
+      <div id="statusMsg" class="status-msg"></div>
+
+      <form id="requestForm" class="form active">
+        <p style="color: #555; font-size: 0.95rem; margin-bottom: 20px">
+          Enter your registered email address. We will send you a secure token
+          to reset your password.
+        </p>
+
+        <label for="resetEmail">Email Address</label>
+        <input
+          type="email"
+          id="resetEmail"
+          placeholder="e.g., student@iiitpune.edu"
+          required
+        />
+
+        <button type="submit" class="btn">Send Reset Token</button>
+      </form>
+
+      <form id="resetForm" class="form">
+        <div class="info-box">
+          <strong>OTP Sent!</strong> Please check your email inbox (and spam)
+          for the code.
+        </div>
+
+        <label for="token">Reset Token (OTP)</label>
+        <input
+          type="text"
+          id="token"
+          placeholder="Enter 4-digit OTP"
+          required
+        />
+
+        <label for="newPassword">New Password</label>
+        <input
+          type="password"
+          id="newPassword"
+          placeholder="Enter new password"
+          required
+        />
+
+        <button type="submit" class="btn">Change Password</button>
+      </form>
+
+      <a href="index.html" class="back-link">← Back to Login</a>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:8080/api/users";
+      const requestForm = document.getElementById("requestForm");
+      const resetForm = document.getElementById("resetForm");
+      const statusMsg = document.getElementById("statusMsg");
+
+      function showMessage(msg, type) {
+        statusMsg.textContent = msg;
+        statusMsg.className = "status-msg " + type;
+        statusMsg.style.display = "block";
+      }
+
+      // --- STEP 1: SEND EMAIL ---
+      requestForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("resetEmail").value;
+        const btn = requestForm.querySelector("button");
+
+        btn.textContent = "Sending...";
+        btn.disabled = true;
+        statusMsg.style.display = "none";
+
+        try {
+          const res = await fetch(`${API_URL}/forgot-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email }),
+          });
+
+          if (res.ok) {
+            // Switch to Step 2
+            requestForm.style.display = "none";
+            // Ensure flex direction is handled in CSS or inherited class
+            resetForm.style.display = "flex";
+          } else {
+            showMessage("Email not found in our system.", "error");
+            btn.textContent = "Send Reset Token";
+            btn.disabled = false;
+          }
+        } catch (err) {
+          console.error(err);
+          showMessage("Could not connect to server.", "error");
+          btn.textContent = "Send Reset Token";
+          btn.disabled = false;
+        }
+      });
+
+      // --- STEP 2: RESET PASSWORD ---
+      resetForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        // This line now works because we fixed the HTML ID above
+        const token = document.getElementById("token").value;
+        const newPass = document.getElementById("newPassword").value;
+        const btn = resetForm.querySelector("button");
+
+        btn.textContent = "Updating...";
+        btn.disabled = true;
+
+        try {
+          const res = await fetch(`${API_URL}/reset-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: token, newPassword: newPass }),
+          });
+
+          if (res.ok) {
+            alert("Password Changed Successfully! You can now login.");
+            window.location.href = "index.html";
+          } else {
+            showMessage("Invalid or expired token.", "error");
+            btn.textContent = "Change Password";
+            btn.disabled = false;
+          }
+        } catch (err) {
+          console.error(err);
+          showMessage("Server error occurred.", "error");
+          btn.textContent = "Change Password";
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
