@@ -376,6 +376,83 @@
 <!-- ============== modal end ============== -->
 
 
+<!-- ===================== Warden Profile Modal (new changes) ===================== -->
+<div id="wardenProfileModal" class="modal">
+  <div class="modal-card profile-card">
+    <button class="modal-close" id="wpClose">×</button>
+
+    <div class="profile-wrapper">
+
+      <!-- LEFT PANEL -->
+      <div class="profile-left">
+        <img id="wpPhoto" class="pf-photo" style="display:none;">
+        <div id="wpPhotoFallback" class="pf-photo-fallback">👤</div>
+
+        <h3 id="wpNameLeft">Warden Name</h3>
+        <p id="wpMiniMeta">Block: -</p>
+
+        <button id="wpChangePhoto" class="secondary-btn">Change Photo</button>
+        <input id="wpPhotoInput" type="file" accept="image/*" hidden>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="profile-right">
+
+        <!-- TAB BUTTONS -->
+        <div class="tab-buttons">
+          <button class="tab-btn active" data-tab="personal">Personal</button>
+          <button class="tab-btn" data-tab="work">Work</button>
+          <button class="tab-btn" data-tab="other">Other</button>
+        </div>
+
+        <form id="wpForm">
+
+          <!-- PERSONAL TAB -->
+          <div class="tab-panel active" id="tab-personal">
+            <label>Full Name</label>
+            <input id="wpFullName" type="text">
+
+            <label>Email</label>
+            <input id="wpEmail" type="email">
+
+            <label>Phone Number</label>
+            <input id="wpPhone" type="text">
+          </div>
+
+          <!-- WORK TAB -->
+          <div class="tab-panel" id="tab-work">
+            <label>Warden Block</label>
+            <div class="block-select">
+              <button type="button" class="block-btn" data-block="A">A</button>
+              <button type="button" class="block-btn" data-block="B">B</button>
+              <button type="button" class="block-btn" data-block="C">C</button>
+              <button type="button" class="block-btn" data-block="D">D</button>
+            </div>
+
+            <label>Employee ID</label>
+            <input id="wpEmpId" type="text">
+          </div>
+
+          <!-- OTHER TAB -->
+          <div class="tab-panel" id="tab-other">
+            <label>About</label>
+            <textarea id="wpAbout"></textarea>
+
+            <label>Notes</label>
+            <input id="wpNotes" type="text">
+          </div>
+
+          <button type="submit" class="primary-btn">Save Changes</button>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ===================== Warden Profile Modal End ===================== -->
+
+
   <script src="warden.js" defer></script>
 </body>
 </html>
