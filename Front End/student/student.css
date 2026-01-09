@@ -434,3 +434,82 @@ body.modal-open{ overflow: hidden; }
 
 
  /* ===== Profile modal end ===== */
+
+
+ /* ===== Full Notices Modal : new changes  ===== */
+ 
+.notice-list-full {
+  margin-top: 10px;
+  max-height: 65vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.notice-full-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  border-left: 4px solid var(--blue);
+}
+
+.notice-full-card .nt-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.notice-full-card .nt-meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.notice-full-card .nt-desc {
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+/* ===== Full Notices Modal ends ===== */
+
+
+/* ===== Notifications : new changes ===== */
+
+/*.notifications-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.notification-card {
+  background: #fff;
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  border-left: 4px solid var(--blue);
+}
+
+.notification-card .ntf-time {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  margin-top: 5px;
+}
+
+#notifBellContainer {
+  position: relative;
+}
+
+#notifBadge {
+  position: absolute;
+  top: -6px;
+  right: -2px;
+  background: red;
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 5px;
+  border-radius: 50%;
+  display: none;
+} */
+
+  /* ===== Notifications end ===== */
