@@ -216,6 +216,77 @@
 
 <!-- Performance & Ratings Modal end -->
 
+
+<!-- ===================== Staff Profile Modal (new changes) ===================== -->
+<div id="staffProfileModal" class="modal">
+  <div class="modal-card profile-card">
+    <button class="modal-close" id="spClose">×</button>
+
+    <div class="profile-wrapper">
+      
+      <!-- LEFT SIDE: Photo + Mini Info -->
+      <div class="profile-left">
+        <img id="spPhoto" class="pf-photo" style="display:none;">
+        <div id="spPhotoFallback" class="pf-photo-fallback">👤</div>
+
+        <h3 id="spNameLeft">Staff Name</h3>
+        <p id="spMiniMeta">Dept: -</p>
+
+        <button id="spChangePhoto" class="secondary-btn">Change Photo</button>
+        <input id="spPhotoInput" type="file" accept="image/*" hidden>
+      </div>
+
+      <!-- RIGHT SIDE: TABS + FORM -->
+      <div class="profile-right">
+        <div class="tab-buttons">
+          <button class="tab-btn active" data-tab="personal">Personal</button>
+          <button class="tab-btn" data-tab="work">Work</button>
+          <button class="tab-btn" data-tab="other">Other</button>
+        </div>
+
+        <form id="spForm">
+
+          <!-- PERSONAL TAB -->
+          <div class="tab-panel active" id="tab-personal">
+            <label>Full Name</label>
+            <input id="spFullName" type="text">
+
+            <label>Email</label>
+            <input id="spEmail" type="email">
+
+            <label>Phone</label>
+            <input id="spPhone" type="text">
+          </div>
+
+          <!-- WORK TAB -->
+          <div class="tab-panel" id="tab-work">
+            <label>Department</label>
+            <input id="spDept" type="text">
+
+            <label>Staff ID</label>
+            <input id="spStaffId" type="text">
+          </div>
+
+          <!-- OTHER TAB -->
+          <div class="tab-panel" id="tab-other">
+            <label>About</label>
+            <textarea id="spAbout"></textarea>
+
+            <label>Skills</label>
+            <input id="spSkills" type="text">
+          </div>
+
+          <button type="submit" class="primary-btn">Save Changes</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ===================== Staff Profile Modal End ===================== -->
+
+
+
   <script src="staff.js" defer></script>
 </body>
 </html>
