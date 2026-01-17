@@ -1,0 +1,118 @@
+[ {
+  "index" : 1,
+  "timestamp" : [ 2026, 1, 10, 10, 27, 34, 650876300 ],
+  "transactions" : [ {
+    "transactionId" : "0315e8db-a7f9-4de7-8f41-6a5ae90c9656",
+    "complaintId" : "1",
+    "userId" : "T22102",
+    "action" : "Closed",
+    "description" : "Complaint raised by Yugant Manekar for room 504",
+    "timestamp" : [ 2026, 1, 10, 10, 27, 34, 647878800 ]
+  } ],
+  "previousHash" : "0",
+  "hash" : "1036e01120992d4a1ce7685ecf48a59d6a79c04f2510cab24299df800691315a"
+}, {
+  "index" : 2,
+  "timestamp" : [ 2026, 1, 10, 10, 35, 28, 786524500 ],
+  "transactions" : [ {
+    "transactionId" : "87a82da3-d2a7-4ee9-a223-004cbabcdea4",
+    "complaintId" : "1",
+    "userId" : "SYSTEM",
+    "action" : "ASSIGNED",
+    "description" : "Complaint assigned to staff Mr. staff",
+    "timestamp" : [ 2026, 1, 10, 10, 35, 28, 785526400 ]
+  } ],
+  "previousHash" : "1036e01120992d4a1ce7685ecf48a59d6a79c04f2510cab24299df800691315a",
+  "hash" : "d87185ec3df232e0eb060195158fa8588c63e0babfcbe60905338e6de3033064"
+}, {
+  "index" : 3,
+  "timestamp" : [ 2026, 1, 10, 10, 43, 58, 924502800 ],
+  "transactions" : [ {
+    "transactionId" : "9acfd72b-6357-4b11-85f9-da5e197a9ca3",
+    "complaintId" : "1",
+    "userId" : "STF001",
+    "action" : "RESOLVED",
+    "description" : "Complaint resolved by staff Mr. staff",
+    "timestamp" : [ 2026, 1, 10, 10, 43, 58, 923502200 ]
+  } ],
+  "previousHash" : "d87185ec3df232e0eb060195158fa8588c63e0babfcbe60905338e6de3033064",
+  "hash" : "23fafe9291e7a0019442a27afce815395c7826f399f9b16857a270c9ad5eb77b"
+}, {
+  "index" : 4,
+  "timestamp" : [ 2026, 1, 10, 10, 46, 32, 827200700 ],
+  "transactions" : [ {
+    "transactionId" : "98df6562-f222-4940-a79f-64043e049528",
+    "complaintId" : "1",
+    "userId" : "Student",
+    "action" : "ESCALATED",
+    "description" : "Escalated with proof: POOR",
+    "timestamp" : [ 2026, 1, 10, 10, 46, 32, 826199900 ]
+  } ],
+  "previousHash" : "23fafe9291e7a0019442a27afce815395c7826f399f9b16857a270c9ad5eb77b",
+  "hash" : "9d61ef6ce0ea06a63487d6a76866f7d6e199a678ee09f890d4c450ddf8d81003"
+}, {
+  "index" : 5,
+  "timestamp" : [ 2026, 1, 10, 10, 48, 23, 488491900 ],
+  "transactions" : [ {
+    "transactionId" : "048af2f2-8773-4e8b-a75f-cf118868e683",
+    "complaintId" : "1",
+    "userId" : "Warden",
+    "action" : "REVERTED",
+    "description" : "Status reverted to In Progress",
+    "timestamp" : [ 2026, 1, 10, 10, 48, 23, 481966700 ]
+  } ],
+  "previousHash" : "9d61ef6ce0ea06a63487d6a76866f7d6e199a678ee09f890d4c450ddf8d81003",
+  "hash" : "849ae007c2d215ba4cf1acc403c83aeaa9f4ba814dccab78573d43a50b15fbea"
+}, {
+  "index" : 6,
+  "timestamp" : [ 2026, 1, 16, 19, 7, 2, 881406700 ],
+  "transactions" : [ {
+    "transactionId" : "d9b730e5-1d7f-42fb-8664-3310180a842e",
+    "complaintId" : "1",
+    "userId" : "T22025",
+    "action" : "RAISED",
+    "description" : "Complaint raised by Parikshit Daivadnya for room 504",
+    "timestamp" : [ 2026, 1, 16, 19, 7, 2, 808850000 ]
+  } ],
+  "previousHash" : "849ae007c2d215ba4cf1acc403c83aeaa9f4ba814dccab78573d43a50b15fbea",
+  "hash" : "3aff55d4c4847cc0bf9780868949afb428eb7b87ba19a8afd98e49c757aefaea"
+}, {
+  "index" : 7,
+  "timestamp" : [ 2026, 1, 16, 19, 9, 10, 30421700 ],
+  "transactions" : [ {
+    "transactionId" : "13ab9c2d-2a93-4495-8afe-09107883d2d0",
+    "complaintId" : "1",
+    "userId" : "SYSTEM",
+    "action" : "ASSIGNED",
+    "description" : "Complaint assigned to staff Mr. staff",
+    "timestamp" : [ 2026, 1, 16, 19, 9, 10, 26871700 ]
+  } ],
+  "previousHash" : "3aff55d4c4847cc0bf9780868949afb428eb7b87ba19a8afd98e49c757aefaea",
+  "hash" : "f43289b259d7598262d5fd504623d9ee5b4f8962f232cd4baa854b98580eaa7c"
+}, {
+  "index" : 8,
+  "timestamp" : [ 2026, 1, 16, 19, 9, 51, 769890000 ],
+  "transactions" : [ {
+    "transactionId" : "677c2194-fe08-42dc-ba97-79bb57333962",
+    "complaintId" : "1",
+    "userId" : "STF001",
+    "action" : "RESOLVED",
+    "description" : "Complaint resolved by staff Mr. staff",
+    "timestamp" : [ 2026, 1, 16, 19, 9, 51, 765870000 ]
+  } ],
+  "previousHash" : "f43289b259d7598262d5fd504623d9ee5b4f8962f232cd4baa854b98580eaa7c",
+  "hash" : "7b7cb4f06d60be5617f701c4725b84be373cd74a2334b93ca439ce486631ac8a"
+}, {
+  "index" : 9,
+  "timestamp" : [ 2026, 1, 16, 19, 11, 7, 478797400 ],
+  "transactions" : [ {
+    "transactionId" : "eadbd075-7ccf-4fb8-b52c-b44a12c1a76a",
+    "complaintId" : "1",
+    "userId" : "T22025",
+    "action" : "CLOSED",
+    "description" : "Feedback submitted with proof. Rating: 4",
+    "timestamp" : [ 2026, 1, 16, 19, 11, 7, 475770200 ]
+  } ],
+  "previousHash" : "7b7cb4f06d60be5617f701c4725b84be373cd74a2334b93ca439ce486631ac8a",
+  "hash" : "0dfb3dcdb2d2b5dec6e0bc9caced2cfa5a9468d8eaf8970e0831d235077f0fc0"
+} ]

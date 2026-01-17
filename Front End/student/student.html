@@ -1,447 +1,483 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DHCR • Student Dashboard</title>
-  <link rel="stylesheet" href="student.css" />
-</head>
-<body>
-  <!-- PAGE WRAPPER (95% of viewport, leaves blue border visible) -->
-  <div class="page">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DHCR • Student Dashboard</title>
+    <link rel="stylesheet" href="student.css" />
+    <style>
+      /* Inline CSS for new features */
+      .star-rating {
+        direction: rtl;
+        display: inline-block;
+        font-size: 1.5rem;
+      }
+      .star-rating input {
+        display: none;
+      }
+      .star-rating label {
+        color: #ddd;
+        cursor: pointer;
+      }
+      .star-rating input:checked ~ label {
+        color: #f39c12;
+      }
+      .star-rating label:hover,
+      .star-rating label:hover ~ label {
+        color: #f39c12;
+      }
 
-    <!-- TOP BAR -->
-    <header class="topbar">
-      <h1 class="welcome">Welcome, <span id="studentName">[Student Name]</span></h1>
-      <div class="top-actions">
-        <button class="icon-btn" id="notifBtn" title="Notifications">🔔</button>
-        <button class="icon-btn" id="profileBtn" title="Profile">👤</button>
-        <button class="btn-outline" id="logoutBtn" title="Logout">Logout</button>
+      .status-escalated {
+        background-color: #ffebee;
+        color: #c62828;
+        border: 1px solid #ffcdd2;
+      }
+
+      /* Profile Photo Styles */
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+      }
+      .btn-xs {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        margin-top: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <h1 class="welcome">
+          Welcome, <span id="studentName">[Student Name]</span>
+        </h1>
+        <div class="top-actions">
+          <button class="icon-btn" id="notifBtn" title="Notifications">
+            🔔
+          </button>
+          <button class="icon-btn" id="profileBtn" title="Profile">👤</button>
+          <button class="btn-outline" id="logoutBtn" title="Logout">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="kpis">
+          <article class="kpi-card">
+            <p class="kpi-label">Pending Complaints</p>
+            <p class="kpi-value" id="kpiPending">0</p>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-label">Resolved Complaints</p>
+            <p class="kpi-value" id="kpiResolved">0</p>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-label">Resale Items</p>
+            <p class="kpi-value" id="kpiResale">0</p>
+          </article>
+        </section>
+
+        <section class="grid">
+          <div class="card">
+            <div class="card-head">
+              <h2>Latest Notices</h2>
+              <span class="hint">Posted by <strong>Warden</strong></span>
+            </div>
+            <ul class="notice-list" id="noticeList"></ul>
+            <div class="card-foot">
+              <button class="link-btn" id="viewAllNotices">
+                View all notices
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Quick Links</h2></div>
+            <div class="quick-links">
+              <button class="ql-btn" data-open="raiseComplaint">
+                🎓 Lodge Complaint
+              </button>
+              <button class="ql-btn" data-open="myComplaints">
+                👥 My Complaints
+              </button>
+              <button class="ql-btn" data-open="resaleMarket">
+                🪙 Resale Market
+              </button>
+              <button class="ql-btn" data-open="profile">✅ Profile</button>
+            </div>
+          </div>
+
+          <div class="card wide">
+            <div class="card-head"><h2>Recent Activity</h2></div>
+            <ul class="activity" id="activityList"></ul>
+          </div>
+        </section>
       </div>
-    </header>
 
-    <!-- SCROLLABLE CONTENT AREA -->
-    <div class="content">
-
-      <!-- KPI CARDS (3 only) -->
-      <section class="kpis">
-        <article class="kpi-card">
-          <p class="kpi-label">Pending Complaints</p>
-          <p class="kpi-value" id="kpiPending">0</p>
-        </article>
-
-        <article class="kpi-card">
-          <p class="kpi-label">Resolved Complaints</p>
-          <p class="kpi-value" id="kpiResolved">0</p>
-        </article>
-
-        <article class="kpi-card">
-          <p class="kpi-label">Resale Items</p>
-          <p class="kpi-value" id="kpiResale">0</p>
-        </article>
-      </section>
-
-      <!-- GRID -->
-      <section class="grid">
-        <!-- NOTICES (by Warden) -->
-        <div class="card">
-          <div class="card-head">
-            <h2>Latest Notices</h2>
-            <span class="hint">Posted by <strong>Warden</strong></span>
-          </div>
-          <ul class="notice-list" id="noticeList"></ul>
-          <div class="card-foot">
-            <button class="link-btn" id="viewAllNotices">View all notices</button>
-          </div>
-        </div>
-
-        <!-- QUICK LINKS (buttons only) -->
-        <div class="card">
-          <div class="card-head">
-            <h2>Quick Links</h2>
-          </div>
-          <div class="quick-links">
-            <button class="ql-btn" data-open="raiseComplaint">🎓 Lodge Complaint</button>
-            <button class="ql-btn" data-open="myComplaints">👥 My Complaints</button>
-            <button class="ql-btn" data-open="resaleMarket">🪙 Resale Market</button>
-            <button class="ql-btn" data-open="profile">✅ Profile</button>
-          </div>
-        </div>
-
-        <!-- RECENT ACTIVITY -->
-        <div class="card wide">
-          <div class="card-head">
-            <h2>Recent Activity</h2>
-          </div>
-          <ul class="activity" id="activityList"></ul>
-        </div>
-      </section>
+      <footer class="footer">
+        © <span id="year"></span> DHCR • Contact Support • Help
+      </footer>
     </div>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-      © <span id="year"></span> DHCR • Contact Support • Help
-    </footer>
-  </div>
+    <div id="complaintModal" class="modal" aria-hidden="true" role="dialog">
+      <div class="modal-card">
+        <button class="modal-close" id="lcClose" aria-label="Close">×</button>
+        <h2 id="lcTitle">Lodge a Complaint</h2>
+        <p class="breadcrumb">Dashboard • Lodge Complaint</p>
 
-  <!-- Complaint Modal -->
-  <div id="complaintModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="lcTitle">
-  <div class="modal-card">
-    <button class="modal-close" id="lcClose" aria-label="Close">×</button>
+        <form id="lcForm" autocomplete="off">
+          <label class="field">
+            <span>Complaint Type</span>
+            <select id="lcType" required>
+              <option value="" selected disabled>Select type</option>
+              <option>Electrical</option>
+              <option>Plumbing</option>
+              <option>Housekeeping</option>
+              <option>Internet / Wi-Fi</option>
+              <option>Other</option>
+            </select>
+          </label>
 
-    <h2 id="lcTitle">Lodge a Complaint</h2>
-    <p class="breadcrumb">Dashboard • Lodge Complaint</p>
+          <label class="field">
+            <span>Complaint Description</span>
+            <textarea
+              id="lcDesc"
+              rows="4"
+              placeholder="Describe the issue…"
+              required
+            ></textarea>
+          </label>
 
-    <form id="lcForm" autocomplete="off">
-      <!-- Complaint Type -->
-      <label class="field">
-        <span>Complaint Type</span>
-        <select id="lcType" required>
-          <option value="" selected disabled>Select type</option>
-          <option>Electrical</option>
-          <option>Plumbing</option>
-          <option>Housekeeping</option>
-          <option>Internet / Wi-Fi</option>
-          <option>Other</option>
-        </select>
-      </label>
+          <label class="field">
+            <span>Preferred Time Slot</span>
+            <select id="lcSlot" required>
+              <option value="" selected disabled>Select a slot</option>
+              <option>08:00 AM – 10:00 AM</option>
+              <option>10:00 AM – 12:00 PM</option>
+              <option>12:00 PM – 02:00 PM</option>
+              <option>02:00 PM – 04:00 PM</option>
+              <option>04:00 PM – 06:00 PM</option>
+              <option>06:00 PM – 08:00 PM</option>
+            </select>
+          </label>
 
-      <!-- Title -->
-      <label class="field">
-        <span>Complaint Title</span>
-        <input id="lcTitleInput" type="text" placeholder="Short title" required />
-      </label>
-
-      <!-- Visit Date -->
-     <label for="lcDate">Preferred Visit Date</label>
-     <input type="date" id="lcDate" required />
-
-
-      <!-- Description -->
-      <label class="field">
-        <span>Complaint Description</span>
-        <textarea id="lcDesc" rows="4" placeholder="Describe the issue…" required></textarea>
-      </label>
-
-      <!-- Proof upload -->
-      <label class="field">
-        <span>Upload Proof (optional)</span>
-        <input id="lcProof" type="file" accept=".jpg,.jpeg,.png,.pdf" />
-      </label>
-
-      <!-- Preferred Time Slot (8am–8pm only) -->
-      <label class="field">
-        <span>Preferred Time Slot</span>
-        <select id="lcSlot" required>
-          <option value="" selected disabled>Select a slot</option>
-          <option>08:00 AM – 10:00 AM</option>
-          <option>10:00 AM – 12:00 PM</option>
-          <option>12:00 PM – 02:00 PM</option>
-          <option>02:00 PM – 04:00 PM</option>
-          <option>04:00 PM – 06:00 PM</option>
-          <option>06:00 PM – 08:00 PM</option>
-        </select>
-      </label>
-
-      <!-- Actions -->
-      <div class="actions">
-        <button type="submit" class="btn-primary">Submit Complaint</button>
-        <button type="reset" class="btn-ghost" id="lcReset">Reset Form</button>
-      </div>
-    </form>
-  </div>
-</div>
-<!--Modal 1 end-->
-
-
-
-<!-- My Complaints Modal -->
-<div id="complaintsModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="mcTitle">
-  <div class="modal-card wide">
-    <button class="modal-close" id="mcClose" aria-label="Close">×</button>
-
-    <h2 id="mcTitle">My Complaints</h2>
-    <p class="breadcrumb">Dashboard • My Complaints</p>
-
-    <!-- Search & Filter -->
-    <div class="filter-bar">
-  <select id="mcFilter">
-    <option value="all">All</option>
-    <option value="pending">Pending</option>
-    <option value="progress">In Progress</option>
-    <option value="resolved">Resolved</option>
-  </select>
-</div>
-
-
-    <!-- Complaints Table -->
-    <div class="table-wrapper">
-      <table class="complaints-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Type</th>
-            <th>Title</th>
-            <th>Date</th>
-            <th>Slot</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="complaintsBody">
-          <!-- filled via JS -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-<!--Modal 2 end-->
-
-
-
-<!-- ============== Resale Items Modal ============== -->
-<div id="resaleModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="rsTitle">
-  <div class="modal-card widest">
-    <button class="modal-close" id="rsClose" aria-label="Close">×</button>
-
-    <h2 id="rsTitle">Resale Items</h2>
-    <p class="breadcrumb">Dashboard • Resale Items</p>
-
-    <!-- Top toolbar -->
-    <div class="rs-toolbar">
-      <input type="text" id="rsSearch" placeholder="🔍 Search for an item..." />
-      <select id="rsCategory">
-        <option value="all">Filter by Category</option>
-        <option value="electronics">Electronics</option>
-        <option value="books">Books</option>
-        <option value="furniture">Furniture</option>
-        <option value="misc">Misc</option>
-      </select>
-      <select id="rsSort">
-        <option value="new">Sort by: Newest</option>
-        <option value="priceAsc">Price: Low → High</option>
-        <option value="priceDesc">Price: High → Low</option>
-        <option value="old">Oldest</option>
-      </select>
-      <button class="btn-primary" id="rsPostBtn">+ Post Item</button>
-    </div>
-
-    <!-- Items grid -->
-    <div class="rs-grid" id="rsGrid"><!-- filled by JS --></div>
-  </div>
-</div>
-
-<!-- ========== Resale: View Details (mini modal) ========== -->
-<div id="rsDetailsModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="rsDetTitle">
-  <div class="modal-card" style="max-width:640px">
-    <button class="modal-close" id="rsDetClose" aria-label="Close">×</button>
-    <h2 id="rsDetTitle">Item Details</h2>
-    <div class="rs-details">
-      <img id="rsDetImg" alt="Item image" />
-      <div class="rs-det-info">
-        <h3 id="rsDetName"></h3>
-        <p class="price" id="rsDetPrice"></p>
-        <p class="muted" id="rsDetOwner"></p>
-        <p id="rsDetDesc"></p>
-        <div class="actions">
-          <button class="btn-primary" id="rsMarkSold">Mark as Sold</button>
-          <button class="btn-ghost" id="rsDetCloseBtn">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== Resale: Post Item (mini modal) ========== -->
-<div id="postItemModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="piTitle">
-  <div class="modal-card" style="max-width:640px">
-    <button class="modal-close" id="piClose" aria-label="Close">×</button>
-    <h2 id="piTitle">Post a New Item</h2>
-    <form id="piForm" class="rs-post-form" autocomplete="off">
-      <label class="field"><span>Item Name</span>
-        <input id="piName" type="text" required placeholder="e.g., Study Table">
-      </label>
-      <label class="field"><span>Price (₹)</span>
-        <input id="piPrice" type="number" min="0" step="1" required placeholder="e.g., 1200">
-      </label>
-      <label class="field"><span>Category</span>
-        <select id="piCategory" required>
-          <option value="electronics">Electronics</option>
-          <option value="books">Books</option>
-          <option value="furniture">Furniture</option>
-          <option value="misc" selected>Misc</option>
-        </select>
-      </label>
-      <label class="field"><span>Description</span>
-        <textarea id="piDesc" rows="3" placeholder="Short description"></textarea>
-      </label>
-      <label class="field"><span>Image (optional)</span>
-        <input id="piImg" type="file" accept=".jpg,.jpeg,.png">
-      </label>
-      <div class="actions">
-        <button type="submit" class="btn-primary">Post Item</button>
-        <button type="button" class="btn-ghost" id="piReset">Reset</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ============== modal 3 end ============== -->
-
-
-<!-- ================= Profile Modal ================= -->
-<div id="profileModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="pfTitle">
-  <div class="modal-card widest profile-card">
-    <button class="modal-close" id="pfClose" aria-label="Close">×</button>
-
-    <h2 id="pfTitle">Profile</h2>
-    <p class="breadcrumb">Dashboard • Profile</p>
-
-    <div class="profile-wrap">
-      <!-- Left: identity -->
-      <aside class="profile-left">
-        <div class="avatar">
-          <img id="pfPhoto" alt="Profile photo" />
-          <span class="avatar-fallback" id="pfPhotoFallback">👤</span>
-        </div>
-        <h3 id="pfNameLeft">Student Name</h3>
-        <p class="role-chip">STUDENT</p>
-
-        <input type="file" id="pfPhotoInput" accept=".jpg,.jpeg,.png" hidden />
-        <button class="btn-ghost full" id="pfChangePhoto">Change Photo</button>
-
-        <div class="mini-meta" id="pfMiniMeta">
-          <!-- optional: Block/Room/PRN filled by JS -->
-        </div>
-      </aside>
-
-      <!-- Right: tabs + forms -->
-      <section class="profile-right">
-        <nav class="tabs-row" role="tablist">
-          <button class="tab-btn active" data-tab="account"  role="tab">Account</button>
-          <button class="tab-btn"        data-tab="emergency" role="tab">Emergency & Health</button>
-          <button class="tab-btn"        data-tab="academic"  role="tab">Academic</button>
-          <button class="tab-btn"        data-tab="personal"  role="tab">Personal</button>
-        </nav>
-
-        <!-- Panels -->
-        <form id="pfForm" class="tab-panels">
-          <!-- Account -->
-          <div class="tab-panel active" id="tab-account">
-            <label class="field"><span>Full Name</span>
-              <input id="pfFullName" type="text" placeholder="Full name" required />
-            </label>
-            <label class="field"><span>Email (read-only)</span>
-              <input id="pfEmail" type="email" class="readonly" readonly />
-            </label>
-            <label class="field"><span>Phone Number</span>
-              <input id="pfPhone" type="tel" placeholder="+91-XXXXXXXXXX" />
-            </label>
-            <label class="field"><span>Home Address</span>
-              <textarea id="pfAddress" rows="3" placeholder="Address"></textarea>
-            </label>
-          </div>
-
-          <!-- Emergency & Health -->
-          <div class="tab-panel" id="tab-emergency">
-            <label class="field"><span>Emergency Contact Person</span>
-              <input id="pfEmergName" type="text" />
-            </label>
-            <label class="field"><span>Emergency Contact Number</span>
-              <input id="pfEmergPhone" type="tel" />
-            </label>
-            <label class="field"><span>Blood Group</span>
-              <select id="pfBlood">
-                <option value="">Select</option>
-                <option>A+</option><option>A-</option>
-                <option>B+</option><option>B-</option>
-                <option>O+</option><option>O-</option>
-                <option>AB+</option><option>AB-</option>
-              </select>
-            </label>
-            <label class="field"><span>Medical Conditions / Allergies</span>
-              <textarea id="pfMedical" rows="3"></textarea>
-            </label>
-          </div>
-
-          <!-- Academic -->
-          <div class="tab-panel" id="tab-academic">
-            <label class="field"><span>Student ID / Roll No (read-only)</span>
-              <input id="pfRoll" type="text" class="readonly" readonly />
-            </label>
-            <label class="field"><span>Course & Year</span>
-              <input id="pfCourseYear" type="text" placeholder="B.E. • 3rd Year" />
-            </label>
-            <label class="field"><span>Vehicle Information (optional)</span>
-              <input id="pfVehicle" type="text" placeholder="Type, Reg no." />
-            </label>
-          </div>
-
-          <!-- Personal -->
-          <div class="tab-panel" id="tab-personal">
-            <label class="field"><span>Interests / Hobbies</span>
-              <input id="pfHobbies" type="text" placeholder="Reading, Sports, Tech" />
-            </label>
-            <label class="field"><span>Mess / Food Preference</span>
-              <select id="pfFood">
-                <option value="">Select</option>
-                <option>Veg</option><option>Non-veg</option><option>Vegan</option>
-              </select>
-            </label>
-            <label class="field"><span>About Me</span>
-              <textarea id="pfAbout" rows="4" placeholder="A short bio…"></textarea>
-            </label>
-          </div>
-
-          <!-- Save -->
-          <div class="save-row">
-            <button type="submit" class="btn-primary">Save Changes</button>
+          <div class="actions">
+            <button type="submit" class="btn-primary">Submit Complaint</button>
+            <button type="reset" class="btn-ghost">Reset Form</button>
           </div>
         </form>
-      </section>
+      </div>
     </div>
-  </div>
-</div>
 
-<!-- ================= Profile Modal end ================= -->
+    <div id="complaintsModal" class="modal" aria-hidden="true" role="dialog">
+      <div class="modal-card wide">
+        <button class="modal-close" id="mcClose" aria-label="Close">×</button>
+        <h2>My Complaints</h2>
+        <p class="breadcrumb">Dashboard • My Complaints</p>
 
-<!-- =============== All Notices Modal : new changes =============== -->
+        <div class="filter-bar">
+          <select id="mcFilter">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
 
-<div id="noticesModal" class="modal" aria-hidden="true">
-  <div class="modal-card widest">
-    <button class="modal-close" id="ntClose">×</button>
-
-    <h2>All Notices</h2>
-    <p class="breadcrumb">Dashboard • Notices</p>
-
-    <div class="notice-list-full" id="allNoticesBody">
-      <!-- JS will fill full notices here -->
+        <div class="table-wrapper">
+          <table class="complaints-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Date</th>
+                <th>Slot</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="complaintsBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-<!-- =============== All Notices Modal end =============== -->
 
+    <div id="feedbackModal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <button class="modal-close" id="fbClose">×</button>
+        <h2>📝 Submit Feedback</h2>
+        <p class="breadcrumb">Confirm Resolution</p>
 
-<!-- =============== Notifications Modal :  new changes =============== -->
-<!-- <div id="notificationsModal" class="modal">
-  <div class="modal-card widest">
-    <button class="modal-close" id="ntfClose">×</button>
-    <h2>Notifications</h2>
-    <p class="breadcrumb">Dashboard • Alerts</p>
+        <form id="fbForm">
+          <input type="hidden" id="fbComplaintId" />
 
-    <div id="notificationsList" class="notifications-list"> -->
-      <!-- JS will fill notifications here -->
+          <div class="field">
+            <label>Rate Service <span style="color: red">*</span></label>
+            <div class="star-rating">
+              <input type="radio" name="rating" value="5" id="r5" /><label
+                for="r5"
+                >★</label
+              >
+              <input type="radio" name="rating" value="4" id="r4" /><label
+                for="r4"
+                >★</label
+              >
+              <input type="radio" name="rating" value="3" id="r3" /><label
+                for="r3"
+                >★</label
+              >
+              <input type="radio" name="rating" value="2" id="r2" /><label
+                for="r2"
+                >★</label
+              >
+              <input
+                type="radio"
+                name="rating"
+                value="1"
+                id="r1"
+                required
+              /><label for="r1">★</label>
+            </div>
+          </div>
 
-    <!-- </div>
-  </div>
-</div> -->
+          <label class="field">
+            <span>Comments <span style="color: red">*</span></span>
+            <textarea
+              id="fbComment"
+              rows="3"
+              placeholder="How was the service?"
+              required
+            ></textarea>
+          </label>
 
-<!-- =============== Notifications Modal =============== -->
+          <label class="field">
+            <span
+              >Upload Proof of Resolution
+              <span style="color: red">*</span></span
+            >
+            <input type="file" id="fbProof" accept="image/*" required />
+            <small style="color: #666; font-size: 0.85em"
+              >Image required to close complaint.</small
+            >
+          </label>
 
+          <div class="actions">
+            <button type="submit" class="btn-primary">Submit & Close</button>
+            <button type="button" class="btn-ghost" id="fbCancel">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
- 
-<script src="student.js"></script>
+    <div id="escalateModal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <button class="modal-close" id="escClose">×</button>
+        <h2 style="color: #dc3545">⚠️ Report Issue Not Solved</h2>
+        <p class="breadcrumb">Dashboard • Escalate</p>
 
+        <form id="escForm">
+          <input type="hidden" id="escComplaintId" />
 
-</body>
+          <label class="field">
+            <span
+              >Why is this not solved? <span style="color: red">*</span></span
+            >
+            <textarea
+              id="escReason"
+              rows="3"
+              placeholder="e.g., The tap is still leaking..."
+              required
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span>Upload Photo Proof <span style="color: red">*</span></span>
+            <input type="file" id="escProof" accept="image/*" required />
+            <small style="color: #666; font-size: 0.85em"
+              >Show the warden that the issue persists.</small
+            >
+          </label>
+
+          <div class="actions">
+            <button
+              type="submit"
+              class="btn-primary"
+              style="background-color: #dc3545"
+            >
+              Escalate to Warden
+            </button>
+            <button type="button" class="btn-ghost" id="escCancel">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="resaleModal" class="modal" aria-hidden="true" role="dialog">
+      <div class="modal-card widest">
+        <button class="modal-close" id="rsClose" aria-label="Close">×</button>
+        <h2 id="rsTitle">Resale Items</h2>
+
+        <div class="rs-toolbar">
+          <input type="text" id="rsSearch" placeholder="🔍 Search..." />
+          <select id="rsCategory">
+            <option value="all">All Categories</option>
+            <option value="electronics">Electronics</option>
+            <option value="books">Books</option>
+            <option value="furniture">Furniture</option>
+            <option value="misc">Misc</option>
+          </select>
+          <button class="btn-primary" id="rsPostBtn">+ Post Item</button>
+        </div>
+
+        <div class="rs-grid" id="rsGrid"></div>
+      </div>
+    </div>
+
+    <div id="postItemModal" class="modal" aria-hidden="true" role="dialog">
+      <div class="modal-card" style="max-width: 640px">
+        <button class="modal-close" id="piClose" aria-label="Close">×</button>
+        <h2>Post a New Item</h2>
+        <form id="piForm" class="rs-post-form" autocomplete="off">
+          <label class="field">
+            <span>Item Name</span>
+            <input
+              id="piName"
+              type="text"
+              required
+              placeholder="e.g., Study Table"
+            />
+          </label>
+          <label class="field">
+            <span>Price (₹)</span>
+            <input
+              id="piPrice"
+              type="number"
+              min="0"
+              required
+              placeholder="e.g., 1200"
+            />
+          </label>
+          <label class="field">
+            <span>Category</span>
+            <select id="piCategory" required>
+              <option value="electronics">Electronics</option>
+              <option value="books">Books</option>
+              <option value="furniture">Furniture</option>
+              <option value="misc" selected>Misc</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Description</span>
+            <textarea
+              id="piDesc"
+              rows="3"
+              placeholder="Short description"
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span>Upload Image <span style="color: red">*</span></span>
+            <input type="file" id="piImage" accept="image/*" required />
+          </label>
+
+          <div class="actions">
+            <button type="submit" class="btn-primary">Post Item</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="profileModal" class="modal" aria-hidden="true" role="dialog">
+      <div class="modal-card widest profile-card">
+        <button class="modal-close" id="pfClose" aria-label="Close">×</button>
+        <h2>Profile</h2>
+
+        <div class="profile-wrap">
+          <aside class="profile-left">
+            <div class="avatar">
+              <img id="pfPhoto" src="" alt="Profile" style="display: none" />
+              <span class="avatar-fallback" id="pfPhotoFallback">👤</span>
+              <input
+                type="file"
+                id="pfPhotoInput"
+                accept="image/*"
+                style="display: none"
+              />
+              <button type="button" id="pfChangePhoto" class="btn-xs">
+                Change Photo
+              </button>
+            </div>
+            <h3 id="pfNameLeft">Student Name</h3>
+            <p class="role-chip">STUDENT</p>
+          </aside>
+
+          <section class="profile-right">
+            <nav class="tabs-row">
+              <button class="tab-btn active" data-tab="account">Account</button>
+              <button class="tab-btn" data-tab="emergency">Emergency</button>
+            </nav>
+
+            <form id="pfForm" class="tab-panels">
+              <div class="tab-panel active" id="tab-account">
+                <label class="field">
+                  <span>Full Name</span>
+                  <input id="pfFullName" type="text" required />
+                </label>
+                <label class="field">
+                  <span>Email</span>
+                  <input id="pfEmail" type="email" class="readonly" readonly />
+                </label>
+                <label class="field">
+                  <span>Phone Number</span>
+                  <input id="pfPhone" type="tel" />
+                </label>
+                <label class="field">
+                  <span>Address</span>
+                  <textarea id="pfAddress" rows="2"></textarea>
+                </label>
+              </div>
+
+              <div class="tab-panel" id="tab-emergency">
+                <label class="field">
+                  <span>Emergency Phone</span>
+                  <input id="pfEmergPhone" type="tel" />
+                </label>
+                <label class="field">
+                  <span>Student ID</span>
+                  <input id="pfRoll" type="text" class="readonly" readonly />
+                </label>
+                <label class="field">
+                  <span>Course</span>
+                  <input id="pfCourseYear" type="text" />
+                </label>
+              </div>
+
+              <div class="save-row">
+                <button type="submit" class="btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div id="noticesModal" class="modal" aria-hidden="true">
+      <div class="modal-card widest">
+        <button class="modal-close" id="ntClose">×</button>
+        <h2>All Notices</h2>
+        <div class="notice-list-full" id="allNoticesBody"></div>
+      </div>
+    </div>
+
+    <script src="student.js"></script>
+  </body>
 </html>

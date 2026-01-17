@@ -15,18 +15,13 @@ import java.util.UUID;
 public class BlockchainService {
 
     private static final String LEDGER_FOLDER = "blockchain_ledger";
-
     private final ObjectMapper objectMapper;
 
     public BlockchainService() {
-
-
-
-
-       this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule()); // ✅ support LocalDateTime
-        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.registerModule(new JavaTimeModule()); // Support LocalDateTime
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
         File folder = new File(LEDGER_FOLDER);
         if (!folder.exists()) {
             folder.mkdirs();
@@ -36,7 +31,7 @@ public class BlockchainService {
 
     public synchronized void logTransaction(String complaintId, String userId, String action, String description) {
         try {
-            // ✅ Transaction object
+            // 1. Transaction object
             Transaction transaction = new Transaction(
                     UUID.randomUUID().toString(),
                     complaintId,
@@ -46,27 +41,26 @@ public class BlockchainService {
                     LocalDateTime.now()
             );
 
-            // ✅ Get or create complaint-specific blockchain file
+            // 2. Get/Create File
             File complaintFile = new File(LEDGER_FOLDER + "/" + complaintId + ".json");
-
             List<Block> chain;
+
             if (complaintFile.exists()) {
                 chain = BlockchainUtils.loadComplaintChain(complaintFile);
             } else {
                 chain = new ArrayList<>();
             }
 
-            // ✅ Determine previous hash
+            // 3. Determine Previous Hash
+            // If chain is empty, prevHash is "0", otherwise get hash of last block
             String previousHash = chain.isEmpty() ? "0" : chain.get(chain.size() - 1).getHash();
             int newIndex = chain.size() + 1;
 
-            // ✅ Create new block
+            // 4. Create New Block
             Block newBlock = new Block(newIndex, previousHash, transaction);
 
-            // ✅ Append new block to this complaint’s blockchain
+            // 5. Add & Save
             chain.add(newBlock);
-
-            // ✅ Save updated chain to the same complaint file
             BlockchainUtils.saveComplaintChain(complaintFile, chain);
 
             System.out.println("✅ Logged blockchain entry for complaint " + complaintId +
@@ -78,7 +72,7 @@ public class BlockchainService {
         }
     }
 
-    // ✅ Verify the blockchain integrity for a given complaint
+    // ✅ VERIFY INTEGRITY (The core logic)
     public boolean verifyBlockchain(String complaintId) {
         try {
             File complaintFile = new File(LEDGER_FOLDER + "/" + complaintId + ".json");
@@ -87,28 +81,43 @@ public class BlockchainService {
                 return false;
             }
 
-            // Load the chain for this complaint
+            // 1. Load the chain from the JSON file
             List<Block> chain = BlockchainUtils.loadComplaintChain(complaintFile);
 
-            // Check integrity block-by-block
-            for (int i = 1; i < chain.size(); i++) {
-                Block prev = chain.get(i - 1);
-                Block curr = chain.get(i);
+            System.out.println("🔍 Verifying chain for Complaint " + complaintId + " (" + chain.size() + " blocks)...");
 
-                // Recalculate current hash and compare
-                if (!curr.getHash().equals(curr.calculateHash())) {
-                    System.err.println("❌ Hash mismatch at block index " + curr.getIndex());
+            // 2. Loop through every block to check integrity
+            for (int i = 0; i < chain.size(); i++) {
+                Block currentBlock = chain.get(i);
+
+                // --- CHECK A: DATA TAMPERING ---
+                // We recalculate the hash based on the *current* data in the object.
+                // If the file was edited, 'currentBlock' has the new data, so calculateHash() returns a NEW hash.
+                // We compare it to the 'hash' field loaded from the file (which is the OLD hash).
+                String recalculatedHash = currentBlock.calculateHash();
+
+                if (!currentBlock.getHash().equals(recalculatedHash)) {
+                    System.err.println("❌ SECURITY ALERT: Data tampering detected at Block #" + currentBlock.getIndex());
+                    System.err.println("   Stored Hash:      " + currentBlock.getHash());
+                    System.err.println("   Calculated Hash:  " + recalculatedHash);
                     return false;
                 }
 
-                // Verify chain linkage
-                if (!curr.getPreviousHash().equals(prev.getHash())) {
-                    System.err.println("❌ Previous hash mismatch between blocks " + prev.getIndex() + " and " + curr.getIndex());
-                    return false;
+                // --- CHECK B: CHAIN LINKAGE ---
+                // Check if this block points to the correct previous block
+                if (i > 0) {
+                    Block previousBlock = chain.get(i - 1);
+                    if (!currentBlock.getPreviousHash().equals(previousBlock.getHash())) {
+                        System.err.println("❌ CHAIN BROKEN: Block #" + currentBlock.getIndex() +
+                                " does not point to Block #" + previousBlock.getIndex());
+                        System.err.println("   Current.PreviousHash: " + currentBlock.getPreviousHash());
+                        System.err.println("   Previous.Hash:        " + previousBlock.getHash());
+                        return false;
+                    }
                 }
             }
 
-            System.out.println("✅ Blockchain verified successfully for complaint: " + complaintId);
+            System.out.println("✅ Blockchain Integrity Verified: No tampering detected.");
             return true;
 
         } catch (Exception e) {

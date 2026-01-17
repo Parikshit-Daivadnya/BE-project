@@ -1,54 +1,35 @@
 package com.hostelcomplaintresolver.backend.repository;
-import java.util.List;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import com.hostelcomplaintresolver.backend.model.Complaint;
-import com.hostelcomplaintresolver.backend.model.Complaint;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
 @Repository
 public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
 
+    // ✅ FIX 1: Updated query to use 'c.staff' instead of 'c.assignedStaff'
+    // Added COALESCE to return 0.0 if no ratings exist (prevents null errors)
+    @Query("SELECT COALESCE(AVG(c.rating), 0.0) FROM Complaint c WHERE c.staff.userId = :staffId AND c.rating IS NOT NULL")
+    Double getAverageRating(@Param("staffId") String staffId);
 
-//        // Find complaints raised by a specific student
-//        List<Complaint> findByStudent_UserId(String studentId);
-//
-//        // Find complaints assigned to a particular staff member
-//        List<Complaint> findByStaff_UserId(String staffId);
-//
-//        // Find complaints assigned to a particular admin/warden
-//        List<Complaint> findByAssignedTo_UserId(String assignedToId);
+    // ✅ FIX 2: Updated query to use 'c.staff'
+    @Query("SELECT COUNT(c) FROM Complaint c WHERE c.staff.userId = :staffId AND c.rating IS NOT NULL")
+    Long getRatedComplaintCount(@Param("staffId") String staffId);
 
-    // ✅ Finds complaints where student.userId == studentId
+    // ✅ Standard JPA Methods
     List<Complaint> findByStudent_UserId(String studentId);
 
-    // ✅ Finds complaints where staff.userId == staffId (THIS WAS MISSING)
     List<Complaint> findByStaff_UserId(String staffId);
 
-    // ✅ Finds complaints assigned to Warden/Admin
     List<Complaint> findByAssignedTo_UserId(String assignedToId);
 
-
-        /**
-         * By extending JpaRepository, we get standard CRUD methods for free:
-         * save(), findById(), findAll(), delete(), etc.
-         */
-
-        /**
-         * Spring Data JPA automatically creates the query based on the method name.
-         * This will find all complaints associated with a specific student's email.
-         */
-        List<Complaint> findByStudent_Email(String email);
-
-        /**
-         * This will find all complaints assigned to a specific staff member's ID.
-         */
+    List<Complaint> findByStudent_Email(String email);
 
     List<Complaint> findByStaff_Email(String staffEmail);
-         List<Complaint> findAllByOrderByPriorityAsc();
-    }
 
+    List<Complaint> findAllByOrderByPriorityAsc();
+}

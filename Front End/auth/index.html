@@ -28,7 +28,7 @@
         <input
           type="text"
           id="loginUserId"
-          placeholder="e.g., STF001 or T20224"
+          placeholder="e.g., STF001 or IRN Number"
           required
         />
 
@@ -44,7 +44,12 @@
           <label class="checkbox">
             <input type="checkbox" id="rememberMe" /> Remember Me
           </label>
-          <a href="forgot.html" class="forgot">Forgot Password?</a>
+          <a
+            href="#"
+            onclick="alert('Please contact the Admin to reset your password.')"
+            class="forgot"
+            >Forgot Password?</a
+          >
         </div>
 
         <button type="submit" class="btn">LOGIN</button>
@@ -61,7 +66,7 @@
         <input
           type="text"
           id="fullName"
-          placeholder="Enter your full name"
+          placeholder="Enter full name"
           required
         />
 
@@ -79,10 +84,10 @@
         <label for="permanentAddress">Permanent Address</label>
         <textarea
           id="permanentAddress"
-          rows="5"
+          rows="6"
           placeholder="House No, Street, City, State, Pincode"
           required
-          style="resize: vertical; min-height: 100px"
+          style="resize: vertical; min-height: 120px"
         ></textarea>
 
         <label for="password">Password</label>
@@ -109,30 +114,18 @@
           <option value="admin">Admin</option>
         </select>
 
-        <label class="checkbox">
-          <input type="checkbox" id="agreement" required />
-          I agree to the <a href="#">Terms & Conditions</a>,
-          <a href="#">Privacy Policy</a> & Code of Conduct.
-        </label>
-
         <div id="studentFields" class="role-section">
           <hr />
           <p class="section-title">Student Details</p>
 
-          <label for="studentPRN">PRN / Roll No</label>
-          <input
-            type="text"
-            id="studentPRN"
-            placeholder="IRN number (T22025)"
-            required
-          />
+          <label for="studentPRN">IRN / PRN</label>
+          <input type="text" id="studentPRN" placeholder="e.g. T22025" />
 
           <label for="studentHostel">Hostel Name</label>
           <input
             type="text"
             id="studentHostel"
             placeholder="e.g. Boys Hostel 1"
-            required
           />
 
           <label for="studentRoom">Room Number</label>
@@ -140,11 +133,10 @@
             type="text"
             id="studentRoom"
             placeholder="e.g. A-203 (Block-Room)"
-            required
           />
 
           <label for="studentCourse">Course</label>
-          <select id="studentCourse" required>
+          <select id="studentCourse">
             <option value="" disabled selected>Select Course</option>
             <option value="B.Tech">B.Tech</option>
             <option value="M.Tech">M.Tech</option>
@@ -152,7 +144,7 @@
           </select>
 
           <label for="studentYear">Year</label>
-          <select id="studentYear" required>
+          <select id="studentYear">
             <option value="" disabled selected>Select Year</option>
             <option value="1">1st Year</option>
             <option value="2">2nd Year</option>
@@ -161,7 +153,7 @@
           </select>
 
           <label for="studentDept">Department</label>
-          <select id="studentDept" required>
+          <select id="studentDept">
             <option value="" disabled selected>Select Department</option>
             <option value="CSE">Computer Science (CSE)</option>
             <option value="IT">Information Technology (IT)</option>
@@ -171,19 +163,16 @@
           </select>
 
           <label for="parentMobile">Parent's Mobile Number</label>
-          <input
-            type="tel"
-            id="parentMobile"
-            placeholder="+91-XXXXXXXXXX"
-            required
-          />
+          <input type="tel" id="parentMobile" placeholder="+91-XXXXXXXXXX" />
 
-          <label for="studentIdProof">Student ID Proof</label>
+          <label for="studentIdProof"
+            >Upload ID Proof (PDF/Image)
+            <span style="color: red">*</span></label
+          >
           <input
             type="file"
             id="studentIdProof"
             accept=".pdf,.jpg,.jpeg,.png"
-            required
           />
         </div>
 
@@ -202,26 +191,20 @@
             <option value="Other">Other</option>
           </select>
 
-          <label for="staffIdProof">Employee ID Proof</label>
-          <input
-            type="file"
-            id="staffIdProof"
-            accept=".pdf,.jpg,.jpeg,.png"
-            required
-          />
+          <label for="staffIdProof"
+            >Employee ID Proof <span style="color: red">*</span></label
+          >
+          <input type="file" id="staffIdProof" accept=".pdf,.jpg,.jpeg,.png" />
         </div>
 
         <div id="wardenFields" class="role-section hidden">
           <hr />
           <p class="section-title">Warden Details</p>
 
-          <label for="wardenIdProof">Appointment Letter / ID</label>
-          <input
-            type="file"
-            id="wardenIdProof"
-            accept=".pdf,.jpg,.jpeg,.png"
-            required
-          />
+          <label for="wardenIdProof"
+            >Appointment Letter / ID <span style="color: red">*</span></label
+          >
+          <input type="file" id="wardenIdProof" accept=".pdf,.jpg,.jpeg,.png" />
         </div>
 
         <div id="adminFields" class="role-section hidden">
@@ -229,17 +212,19 @@
           <p class="section-title">Admin Details</p>
 
           <label for="adminScope">Scope</label>
-          <select id="adminScope" required>
+          <select id="adminScope">
             <option value="Global">Global</option>
             <option value="Institute" selected>Institute</option>
             <option value="Department">Department</option>
           </select>
 
-          <p class="hint">
-            ⚠ Second-factor setup (TOTP/SMS) will be configured after first
-            login.
-          </p>
+          <p class="hint">⚠ Global admins require backend approval.</p>
         </div>
+
+        <label class="checkbox" style="margin-top: 20px">
+          <input type="checkbox" id="agreement" required />
+          I agree to the Terms & Conditions.
+        </label>
 
         <button type="submit" class="btn">REGISTER</button>
 

@@ -1,0 +1,53 @@
+[ {
+  "index" : 1,
+  "timestamp" : [ 2026, 1, 17, 11, 51, 39, 755465600 ],
+  "transactions" : [ {
+    "transactionId" : "de38b064-e6be-42da-a6e5-a5a50ab70b8d",
+    "complaintId" : "7",
+    "userId" : "T12345",
+    "action" : "Closed",
+    "description" : "Complaint raised by Rushi for room 504",
+    "timestamp" : [ 2026, 1, 17, 11, 51, 39, 753417700 ]
+  } ],
+  "previousHash" : "0",
+  "hash" : "b0822be9be8a1855ea68e839fe9e589b8e2ee8b8420b7d3d4467eadc655e14b0"
+}, {
+  "index" : 2,
+  "timestamp" : [ 2026, 1, 17, 11, 58, 46, 652809700 ],
+  "transactions" : [ {
+    "transactionId" : "c5576e5e-de6e-4c20-8fba-343ac7c03d7a",
+    "complaintId" : "7",
+    "userId" : "SYSTEM",
+    "action" : "ASSIGNED",
+    "description" : "Complaint assigned to staff Mr. staff",
+    "timestamp" : [ 2026, 1, 17, 11, 58, 46, 650331400 ]
+  } ],
+  "previousHash" : "b0822be9be8a1855ea68e839fe9e589b8e2ee8b8420b7d3d4467eadc655e14b0",
+  "hash" : "d29b3a9cda38f8c8d8ec5b95bd9b9cfed829b622a66bd630a5984f70ca89ad00"
+}, {
+  "index" : 3,
+  "timestamp" : [ 2026, 1, 17, 12, 0, 57, 444062700 ],
+  "transactions" : [ {
+    "transactionId" : "4dc7a44b-f9fb-4b0b-9ba3-a22c99d39fa6",
+    "complaintId" : "7",
+    "userId" : "STF001",
+    "action" : "RESOLVED",
+    "description" : "Complaint resolved by staff Mr. staff",
+    "timestamp" : [ 2026, 1, 17, 12, 0, 57, 442052700 ]
+  } ],
+  "previousHash" : "d29b3a9cda38f8c8d8ec5b95bd9b9cfed829b622a66bd630a5984f70ca89ad00",
+  "hash" : "ee85a3ced6fc4473a8d09928fdc26804ffdcad6c73ea2dea6a437b08278c22eb"
+}, {
+  "index" : 4,
+  "timestamp" : [ 2026, 1, 17, 12, 3, 13, 111973400 ],
+  "transactions" : [ {
+    "transactionId" : "fd39053a-7ebd-4f96-a5f8-042867b0d5c8",
+    "complaintId" : "7",
+    "userId" : "Student",
+    "action" : "ESCALATED",
+    "description" : "Escalated with proof: not resolved",
+    "timestamp" : [ 2026, 1, 17, 12, 3, 13, 110018900 ]
+  } ],
+  "previousHash" : "ee85a3ced6fc4473a8d09928fdc26804ffdcad6c73ea2dea6a437b08278c22eb",
+  "hash" : "cd6f2a2141d56238c2e63fcd317cd077439ba1e0d9167277c2176d480e94ef02"
+} ]

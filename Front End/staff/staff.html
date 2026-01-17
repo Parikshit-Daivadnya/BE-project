@@ -1,292 +1,334 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DHCR • Staff Dashboard</title>
-  <link rel="stylesheet" href="staff.css" />
-</head>
-<body>
-  <div class="page">
-    <!-- ========= TOP BAR ========= -->
-    <header class="topbar">
-      <h1 class="welcome">
-        Welcome, <span id="staffName">[Staff Name]</span>
-        <small id="staffRole">(Role: Electrician)</small>
-      </h1>
-      <div class="top-actions">
-        <button class="icon-btn" id="notifBtn" title="Notifications">🔔</button>
-        <button class="icon-btn" id="profileBtn" title="Profile">👤</button>
-        <button class="btn-outline" id="logoutBtn" title="Logout">Logout</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DHCR • Staff Dashboard</title>
+    <link rel="stylesheet" href="staff.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <h1 class="welcome">
+          Welcome, <span id="staffName">[Staff Name]</span>
+          <small id="staffRole">(Role: Electrician)</small>
+        </h1>
+        <div class="top-actions">
+          <button class="icon-btn" id="notifBtn" title="Notifications">
+            🔔
+          </button>
+          <button class="icon-btn" id="profileBtn" title="Profile">👤</button>
+          <button class="btn-outline" id="logoutBtn" title="Logout">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="kpis">
+          <article class="kpi-card">
+            <p class="kpi-label">Assigned Complaints</p>
+            <p class="kpi-value" id="kpiAssigned">0</p>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-label">Today’s Visits</p>
+            <p class="kpi-value" id="kpiVisits">0</p>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-label">Completed This Month</p>
+            <p class="kpi-value" id="kpiCompleted">0</p>
+          </article>
+          <article class="kpi-card rating">
+            <p class="kpi-label">Average Rating</p>
+            <p class="kpi-value" id="kpiRating">0.0</p>
+            <div class="stars" id="kpiStars" aria-hidden="true">★★★★★</div>
+          </article>
+        </section>
+
+        <section class="grid">
+          <div class="card" id="upcomingCard">
+            <div class="card-head"><h2>Upcoming Tasks</h2></div>
+            <ul class="task-list" id="taskList"></ul>
+          </div>
+
+          <div class="card" id="quickLinksCard">
+            <div class="card-head"><h2>Quick Links</h2></div>
+            <div class="quicklinks">
+              <button class="ql-btn" data-open="jobs">
+                📋 My Assigned Complaints
+              </button>
+              <button class="ql-btn" data-open="calendar">
+                🗓️ Calendar View
+              </button>
+              <button class="ql-btn" data-open="performance">
+                ⭐ Performance & Ratings
+              </button>
+            </div>
+          </div>
+
+          <div class="card" id="alertsCard">
+            <div class="card-head"><h2>Notifications / Alerts</h2></div>
+            <ul class="notice-list" id="noticeList"></ul>
+          </div>
+        </section>
       </div>
-    </header>
 
-    <!-- ========= MAIN CONTENT ========= -->
-    <div class="content">
-      <!-- KPIs -->
-      <section class="kpis">
-        <article class="kpi-card">
-          <p class="kpi-label">Assigned Complaints</p>
-          <p class="kpi-value" id="kpiAssigned">0</p>
-        </article>
-        <article class="kpi-card">
-          <p class="kpi-label">Today’s Visits</p>
-          <p class="kpi-value" id="kpiVisits">0</p>
-        </article>
-        <article class="kpi-card">
-          <p class="kpi-label">Completed This Month</p>
-          <p class="kpi-value" id="kpiCompleted">0</p>
-        </article>
-        <article class="kpi-card rating">
-          <p class="kpi-label">Average Rating</p>
-          <p class="kpi-value" id="kpiRating">0.0</p>
-          <div class="stars" id="kpiStars" aria-hidden="true">★★★★★</div>
-        </article>
-      </section>
+      <footer class="footer">© <span id="year"></span> DHCR</footer>
+    </div>
 
-      <!-- Two-column layout -->
-      <section class="grid">
-        <!-- LEFT: Upcoming Tasks -->
-        <div class="card" id="upcomingCard">
-          <div class="card-head"><h2>Upcoming Tasks</h2></div>
-          <ul class="task-list" id="taskList"></ul>
+    <div
+      id="jobsModal"
+      class="modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-labelledby="jobsTitle"
+    >
+      <div class="modal-card widest">
+        <button class="modal-close" id="jobsClose" aria-label="Close">×</button>
+        <h2 id="jobsTitle">My Assigned Complaints</h2>
+
+        <div class="filter-bar">
+          <select id="jobsFilter">
+            <option value="all">All</option>
+            <option value="assigned">Assigned</option>
+            <option value="progress">In Progress</option>
+            <option value="pendingApproval">Pending Approval</option>
+            <option value="resolved">Resolved</option>
+          </select>
         </div>
 
-        <!-- RIGHT/TOP: Quick Links -->
-        <div class="card" id="quickLinksCard">
-          <div class="card-head"><h2>Quick Links</h2></div>
-          <div class="quicklinks">
-            <button class="ql-btn" data-open="jobs">📋 My Assigned Complaints</button>
-            <button class="ql-btn" data-open="calendar">🗓️ Calendar View</button>
-            <button class="ql-btn" data-open="performance">⭐ Performance & Ratings</button>
+        <div class="table-wrapper">
+          <table class="jobs-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Title</th>
+                <th>Room</th>
+                <th>Slot</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="jobsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="calModal"
+      class="modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-labelledby="calTitle"
+    >
+      <div
+        class="modal-card"
+        style="width: min(1100px, 85vw); max-height: 85vh; overflow: auto"
+      >
+        <button class="modal-close" id="calClose" aria-label="Close">×</button>
+        <h2 id="calTitle">My Schedule</h2>
+
+        <div class="cal-header">
+          <div class="left">
+            <button class="btn-ghost" id="calPrev">‹ Previous</button>
+            <button class="btn-ghost" id="calNext">Next ›</button>
+          </div>
+          <div class="right">
+            <button class="btn-ghost is-active" id="viewWeek">Week</button>
+            <button class="btn-ghost" id="viewDay" disabled>Day</button>
           </div>
         </div>
 
-        <!-- RIGHT/BOTTOM: Notifications -->
-        <div class="card" id="alertsCard">
-          <div class="card-head"><h2>Notifications / Alerts</h2></div>
-          <ul class="notice-list" id="noticeList"></ul>
-        </div>
-      </section>
-    </div>
+        <div class="cal-body">
+          <div class="cal-grid" id="calGrid"></div>
 
-    <footer class="footer">© <span id="year"></span> DHCR</footer>
-  </div>
+          <aside class="cal-side">
+            <h3>Today’s Task List</h3>
+            <ul id="calTodayList" class="side-list"></ul>
 
-  <!-- ========= MODALS ========= -->
-
-  <!-- My Assigned Complaints (table) -->
-  <div id="jobsModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="jobsTitle">
-    <div class="modal-card widest">
-      <button class="modal-close" id="jobsClose" aria-label="Close">×</button>
-      <h2 id="jobsTitle">My Assigned Complaints</h2>
-
-      <div class="filter-bar">
-        <select id="jobsFilter">
-          <option value="all">All</option>
-          <option value="assigned">Assigned</option>
-          <option value="progress">In Progress</option>
-          <option value="pendingApproval">Pending Approval</option>
-          <option value="resolved">Resolved</option>
-        </select>
-      </div>
-
-      <div class="table-wrapper">
-        <table class="jobs-table">
-          <thead>
-            <tr>
-              <th>ID</th><th>Type</th><th>Title</th><th>Room</th><th>Slot</th><th>Status</th><th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="jobsBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- My Assigned Complaints (table) end -->
-
-  <!-- Calendar (enhanced week view, ≤85% window) -->
-  <div id="calModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="calTitle">
-    <div class="modal-card" style="width:min(1100px,85vw);max-height:85vh;overflow:auto;">
-      <button class="modal-close" id="calClose" aria-label="Close">×</button>
-      <h2 id="calTitle">My Schedule</h2>
-
-      <!-- Calendar header: navigation + view -->
-      <div class="cal-header">
-        <div class="left">
-          <button class="btn-ghost" id="calPrev">‹ Previous</button>
-          <button class="btn-ghost" id="calNext">Next ›</button>
-        </div>
-        <div class="right">
-          <button class="btn-ghost is-active" id="viewWeek">Week</button>
-          <button class="btn-ghost" id="viewDay" disabled>Day</button>
+            <div class="legend">
+              <h4>Symbol Legend</h4>
+              <p>⚡ Electrical</p>
+              <p>🔧 Plumbing</p>
+              <p>📶 Internet</p>
+              <p>🧰 General</p>
+            </div>
+          </aside>
         </div>
       </div>
+    </div>
 
-      <!-- Body: grid + sidebar -->
-      <div class="cal-body">
-        <div class="cal-grid" id="calGrid"><!-- JS renders week here --></div>
-
-        <aside class="cal-side">
-          <h3>Today’s Task List</h3>
-          <ul id="calTodayList" class="side-list"></ul>
-
-          <div class="legend">
-            <h4>Symbol Legend</h4>
-            <p>⚡ Electrical</p>
-            <p>🔧 Plumbing</p>
-            <p>📶 Internet</p>
-            <p>🧰 General</p>
-          </div>
-        </aside>
+    <div
+      id="dayMoreModal"
+      class="modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-label="Day details"
+    >
+      <div
+        class="modal-card"
+        style="max-width: 680px; max-height: 80vh; overflow: auto"
+      >
+        <button class="modal-close" id="dayMoreClose" aria-label="Close">
+          ×
+        </button>
+        <h2 id="dayMoreTitle">Schedule</h2>
+        <ul id="dayMoreList" class="side-list"></ul>
       </div>
     </div>
-  </div>
 
-  <!-- “+N more” popup for busy days -->
-  <div id="dayMoreModal" class="modal" aria-hidden="true" role="dialog" aria-label="Day details">
-    <div class="modal-card" style="max-width:680px;max-height:80vh;overflow:auto;">
-      <button class="modal-close" id="dayMoreClose" aria-label="Close">×</button>
-      <h2 id="dayMoreTitle">Schedule</h2>
-      <ul id="dayMoreList" class="side-list"></ul>
-    </div>
-  </div>
+    <div
+      id="resolveModal"
+      class="modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-labelledby="resTitle"
+    >
+      <div class="modal-card" style="max-width: 640px">
+        <button class="modal-close" id="resClose" aria-label="Close">×</button>
+        <h2 id="resTitle">Submit Resolution Proof</h2>
 
-  <!-- Submit Resolution Proof -->
-  <div id="resolveModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="resTitle">
-    <div class="modal-card" style="max-width:640px">
-      <button class="modal-close" id="resClose" aria-label="Close">×</button>
-      <h2 id="resTitle">Submit Resolution Proof</h2>
+        <form id="resolveForm" class="up-form" autocomplete="off">
+          <input type="hidden" id="resJobId" />
 
-      <!-- Clean, stacked form -->
-      <form id="resolveForm" class="up-form" autocomplete="off">
-        <input type="hidden" id="resJobId" />
+          <label class="field">
+            <span>Job</span>
+            <input id="resJobDisplay" class="readonly" type="text" readonly />
+          </label>
 
-        <label class="field">
-          <span>Job</span>
-          <input id="resJobDisplay" class="readonly" type="text" readonly />
-        </label>
+          <label class="field">
+            <span>Remark (optional)</span>
+            <textarea
+              id="resRemark"
+              placeholder="What was fixed / parts used…"
+            ></textarea>
+          </label>
 
-        <label class="field">
-          <span>Remark (optional)</span>
-          <textarea id="resRemark" placeholder="What was fixed / parts used…"></textarea>
-        </label>
+          <label class="field">
+            <span>Upload Proof (image)</span>
+            <input
+              id="resProof"
+              type="file"
+              accept=".jpg,.jpeg,.png"
+              required
+            />
+          </label>
 
-        <label class="field">
-          <span>Upload Proof (image)</span>
-          <input id="resProof" type="file" accept=".jpg,.jpeg,.png" required />
-        </label>
-
-        <div class="img-preview" id="resPreview">Preview will appear here</div>
-
-        <div class="actions">
-          <button type="submit" class="btn-primary">Send to Warden</button>
-          <button type="button" class="btn-ghost" id="resCancel">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Calendar (enhanced week view, ≤85% window) end -->
-
-
-  <!-- Performance & Ratings Modal -->
-   
-<div id="perfModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="perfTitle">
-  <div class="modal-card" style="max-width:700px;">
-    <button class="modal-close" id="perfClose" aria-label="Close">×</button>
-    <h2 id="perfTitle">Performance & Ratings</h2>
-
-    <div class="perf-main" style="display:flex; gap:20px; align-items:flex-start;">
-      <div class="perf-summary" style="flex:0 0 180px; text-align:center;">
-        <div id="perfScore" style="font-size:3rem; font-weight:800; color:#0a74ff;">4.7</div>
-        <div id="perfStars" style="font-size:1.2rem; color:#ffb400; letter-spacing:2px;">★★★★★</div>
-        <p style="color:#6b7a90;">Average Rating</p>
-      </div>
-
-      <div style="flex:1;">
-        <h3>Recent Feedback</h3>
-        <ul id="perfList" class="side-list"></ul>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Performance & Ratings Modal end -->
-
-
-<!-- ===================== Staff Profile Modal (new changes) ===================== -->
-<div id="staffProfileModal" class="modal">
-  <div class="modal-card profile-card">
-    <button class="modal-close" id="spClose">×</button>
-
-    <div class="profile-wrapper">
-      
-      <!-- LEFT SIDE: Photo + Mini Info -->
-      <div class="profile-left">
-        <img id="spPhoto" class="pf-photo" style="display:none;">
-        <div id="spPhotoFallback" class="pf-photo-fallback">👤</div>
-
-        <h3 id="spNameLeft">Staff Name</h3>
-        <p id="spMiniMeta">Dept: -</p>
-
-        <button id="spChangePhoto" class="secondary-btn">Change Photo</button>
-        <input id="spPhotoInput" type="file" accept="image/*" hidden>
-      </div>
-
-      <!-- RIGHT SIDE: TABS + FORM -->
-      <div class="profile-right">
-        <div class="tab-buttons">
-          <button class="tab-btn active" data-tab="personal">Personal</button>
-          <button class="tab-btn" data-tab="work">Work</button>
-          <button class="tab-btn" data-tab="other">Other</button>
-        </div>
-
-        <form id="spForm">
-
-          <!-- PERSONAL TAB -->
-          <div class="tab-panel active" id="tab-personal">
-            <label>Full Name</label>
-            <input id="spFullName" type="text">
-
-            <label>Email</label>
-            <input id="spEmail" type="email">
-
-            <label>Phone</label>
-            <input id="spPhone" type="text">
+          <div class="img-preview" id="resPreview">
+            Preview will appear here
           </div>
 
-          <!-- WORK TAB -->
-          <div class="tab-panel" id="tab-work">
-            <label>Department</label>
-            <input id="spDept" type="text">
-
-            <label>Staff ID</label>
-            <input id="spStaffId" type="text">
+          <div class="actions">
+            <button type="submit" class="btn-primary">Send to Warden</button>
+            <button type="button" class="btn-ghost" id="resCancel">
+              Cancel
+            </button>
           </div>
-
-          <!-- OTHER TAB -->
-          <div class="tab-panel" id="tab-other">
-            <label>About</label>
-            <textarea id="spAbout"></textarea>
-
-            <label>Skills</label>
-            <input id="spSkills" type="text">
-          </div>
-
-          <button type="submit" class="primary-btn">Save Changes</button>
         </form>
       </div>
-
     </div>
-  </div>
-</div>
-<!-- ===================== Staff Profile Modal End ===================== -->
 
+    <div
+      id="perfModal"
+      class="modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-labelledby="perfTitle"
+    >
+      <div class="modal-card" style="max-width: 700px">
+        <button class="modal-close" id="perfClose" aria-label="Close">×</button>
+        <h2 id="perfTitle">Performance & Ratings</h2>
 
+        <div
+          class="perf-main"
+          style="display: flex; gap: 20px; align-items: flex-start"
+        >
+          <div class="perf-summary" style="flex: 0 0 180px; text-align: center">
+            <div
+              id="perfScore"
+              style="font-size: 3rem; font-weight: 800; color: #0a74ff"
+            >
+              0.0
+            </div>
+            <div
+              id="perfStars"
+              style="font-size: 1.2rem; color: #ffb400; letter-spacing: 2px"
+            >
+              ☆☆☆☆☆
+            </div>
+            <p style="color: #6b7a90; margin: 0">Average Rating</p>
+            <p
+              id="perfCount"
+              style="font-size: 0.9rem; color: #999; margin-top: 4px"
+            >
+              (0 reviews)
+            </p>
+          </div>
 
-  <script src="staff.js" defer></script>
-</body>
+          <div style="flex: 1">
+            <h3>Rating Breakdown</h3>
+            <p class="muted">
+              Ratings are submitted by students after you resolve a complaint.
+            </p>
+            <ul id="perfList" class="side-list" style="margin-top: 10px"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="staffProfileModal" class="modal">
+      <div class="modal-card profile-card">
+        <button class="modal-close" id="spClose">×</button>
+
+        <div class="profile-wrapper">
+          <div class="profile-left">
+            <img id="spPhoto" class="pf-photo" style="display: none" />
+            <div id="spPhotoFallback" class="pf-photo-fallback">👤</div>
+
+            <h3 id="spNameLeft">Staff Name</h3>
+            <p id="spMiniMeta">Dept: -</p>
+
+            <button id="spChangePhoto" class="secondary-btn">
+              Change Photo
+            </button>
+            <input id="spPhotoInput" type="file" accept="image/*" hidden />
+          </div>
+
+          <div class="profile-right">
+            <div class="tab-buttons">
+              <button class="tab-btn active" data-tab="personal">
+                Personal
+              </button>
+              <button class="tab-btn" data-tab="work">Work</button>
+              <button class="tab-btn" data-tab="other">Other</button>
+            </div>
+
+            <form id="spForm">
+              <div class="tab-panel active" id="tab-personal">
+                <label>Full Name</label><input id="spFullName" type="text" />
+                <label>Email</label><input id="spEmail" type="email" />
+                <label>Phone</label><input id="spPhone" type="text" />
+              </div>
+
+              <div class="tab-panel" id="tab-work">
+                <label>Department</label><input id="spDept" type="text" />
+                <label>Staff ID</label><input id="spStaffId" type="text" />
+              </div>
+
+              <div class="tab-panel" id="tab-other">
+                <label>About</label><textarea id="spAbout"></textarea>
+                <label>Skills</label><input id="spSkills" type="text" />
+              </div>
+
+              <button type="submit" class="primary-btn">Save Changes</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="staff.js" defer></script>
+  </body>
 </html>

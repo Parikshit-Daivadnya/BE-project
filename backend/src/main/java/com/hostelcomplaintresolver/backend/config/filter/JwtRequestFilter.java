@@ -1,6 +1,6 @@
 package com.hostelcomplaintresolver.backend.config.filter;
 
-import com.hostelcomplaintresolver.backend.util.JwtUtil;
+import com.hostelcomplaintresolver.backend.security.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
             try {
+                // ✅ If these succeed, the token is valid (signed & not expired)
                 username = jwtUtil.extractUsername(jwt);
                 roles = jwtUtil.extractRoles(jwt);
             } catch (ExpiredJwtException e) {
@@ -48,33 +50,32 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             } catch (MalformedJwtException e) {
                 System.out.println("Invalid JWT Token format.");
             } catch (Exception e) {
-                // This will now give you a more detailed message
                 System.out.println("Error parsing JWT Token: " + e.getMessage());
             }
         }
 
-        // If we have a username and the user is not already authenticated in this session
+        // ✅ Validate context
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // We don't need UserDetails anymore, we have the roles from the token.
-            // Check if token is valid (this implementation just checks expiration)
-            if (jwtUtil.validateToken(jwt, username)) { // Simplified validation
-
-                // Create the list of authorities from the roles extracted from the token
-                List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
-
-                // Create the authentication token
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        username, null, authorities); // Use username as principal
-
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // Set the authentication in the security context
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+            // Handle potential null roles to avoid NullPointerException
+            if (roles == null) {
+                roles = new ArrayList<>();
             }
+
+            // Create authorities directly from token roles (No DB call needed)
+            List<SimpleGrantedAuthority> authorities = roles.stream()
+                    .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role) // Ensure ROLE_ prefix
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
+
+            // Set Authentication
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    username, null, authorities);
+
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authToken);
         }
+
         chain.doFilter(request, response);
     }
 }

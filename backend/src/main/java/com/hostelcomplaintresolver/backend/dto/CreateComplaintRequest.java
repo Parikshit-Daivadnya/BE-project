@@ -1,13 +1,19 @@
 package com.hostelcomplaintresolver.backend.dto;
 
-public class CreateComplaintRequest {
+import jakarta.validation.constraints.NotBlank;
 
-    //private Long studentId;
+public class CreateComplaintRequest {
+    @NotBlank(message = "Category is required")
     private String category;
+
+    @NotBlank(message = "Description is required")
     private String description;
 
+    private String priority;
+    private String timeSlot;
     // --- GETTERS AND SETTERS ---
-
+    public String getTimeSlot() { return timeSlot; }
+    public void setTimeSlot(String timeSlot) { this.timeSlot = timeSlot; }
 
     public String getCategory() {
         return category;
@@ -23,6 +29,14 @@ public class CreateComplaintRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
     }
 
 

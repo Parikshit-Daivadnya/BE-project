@@ -2,7 +2,8 @@
    Auth Logic: Login, Register, Forgot Password
    ========================================================= */
 
-const API_URL = "http://localhost:8080/api/users";
+// ✅ Point to the Auth Controller
+const API_URL = "http://localhost:8080/api/auth";
 
 // --- DOM ELEMENTS ---
 const loginTab = document.getElementById("loginTab");
@@ -35,7 +36,7 @@ document.getElementById("switchToLogin").onclick = (e) => {
   loginTab.click();
 };
 
-// --- ROLE FIELD TOGGLING (FIXED) ---
+// --- ROLE FIELD TOGGLING ---
 const sections = {
   student: document.getElementById("studentFields"),
   staff: document.getElementById("staffFields"),
@@ -44,22 +45,18 @@ const sections = {
 };
 
 function toggleRoleFields(role) {
-  // 1. Hide ALL sections and remove 'required' from their inputs
+  // 1. Hide ALL sections and remove 'required' from inputs
   for (const key in sections) {
     if (sections[key]) {
       sections[key].classList.add("hidden");
-
-      // Find all inputs/selects inside this section and remove required
       const inputs = sections[key].querySelectorAll("input, select, textarea");
       inputs.forEach((input) => input.removeAttribute("required"));
     }
   }
 
-  // 2. Show ONLY the selected section and add 'required' back
+  // 2. Show ONLY selected section and add 'required' back
   if (sections[role]) {
     sections[role].classList.remove("hidden");
-
-    // Find all inputs inside the active section and make them required
     const inputs = sections[role].querySelectorAll("input, select, textarea");
     inputs.forEach((input) => input.setAttribute("required", "true"));
   }
@@ -70,28 +67,7 @@ if (roleSelect) {
   roleSelect.addEventListener("change", (e) =>
     toggleRoleFields(e.target.value.toLowerCase())
   );
-  // Run once on page load to set correct state
   toggleRoleFields(roleSelect.value.toLowerCase());
-}
-
-// --- HELPER: DECODE JWT TOKEN ---
-function parseJwt(token) {
-  try {
-    var base64Url = token.split(".")[1];
-    var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    var jsonPayload = decodeURIComponent(
-      window
-        .atob(base64)
-        .split("")
-        .map(function (c) {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    return null;
-  }
 }
 
 // ============================================================
@@ -117,20 +93,25 @@ loginForm.addEventListener("submit", async (e) => {
 
     if (response.ok) {
       const data = await response.json();
+
+      // 1. Save Token
       localStorage.setItem("jwt_token", data.token);
+      localStorage.setItem("user_role", data.role);
 
-      const decoded = parseJwt(data.token);
-      const roles = decoded.roles || [];
+      // 2. Redirect based on Role
+      const role = data.role ? data.role.toUpperCase() : "";
 
-      if (roles.includes("ROLE_STUDENT"))
+      if (role === "STUDENT") {
         window.location.href = "../student/student.html";
-      else if (roles.includes("ROLE_STAFF"))
-        window.location.href = "../staff/staff.html";
-      else if (roles.includes("ROLE_WARDEN"))
+      } else if (role === "WARDEN") {
         window.location.href = "../warden/warden.html";
-      else if (roles.includes("ROLE_ADMIN"))
-        window.location.href = "../admin/dashboard.html";
-      else alert("Role not recognized!");
+      } else if (role === "STAFF") {
+        window.location.href = "../staff/staff.html";
+      } else if (role === "ADMIN") {
+        window.location.href = "../admin/admin.html";
+      } else {
+        alert("Role not recognized: " + role);
+      }
     } else {
       alert("Login failed! Invalid User ID or Password.");
     }
@@ -141,65 +122,86 @@ loginForm.addEventListener("submit", async (e) => {
 });
 
 // ============================================================
-// 2. REGISTRATION HANDLER
+// 2. REGISTRATION HANDLER (FIXED FILE INPUTS)
 // ============================================================
 registerForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  // --- Collect Common Fields ---
-  const fullName = document.getElementById("fullName").value.trim();
-  const email = document.getElementById("email").value.trim();
-  const mobile = document.getElementById("mobile").value.trim();
-  const permanentAddress = document
-    .getElementById("permanentAddress")
-    .value.trim();
+  // Validate Passwords
   const password = document.getElementById("password").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
-  const role = document.getElementById("role").value.toUpperCase();
 
   if (password !== confirmPassword) {
     alert("Passwords do not match!");
     return;
   }
 
-  // Base Payload
-  const payload = {
-    name: fullName,
-    email: email,
-    password: password,
-    role: role,
-    mobile: mobile,
-    permanentAddress: permanentAddress,
-  };
+  // ✅ Use FormData
+  const formData = new FormData();
 
-  // --- Collect Role-Specific Fields ---
+  // --- Common Fields ---
+  formData.append("name", document.getElementById("fullName").value.trim());
+  formData.append("email", document.getElementById("email").value.trim());
+  formData.append("mobile", document.getElementById("mobile").value.trim());
+  formData.append(
+    "permanentAddress",
+    document.getElementById("permanentAddress").value.trim()
+  );
+  formData.append("password", password);
+
+  const role = document.getElementById("role").value.toUpperCase();
+  formData.append("role", role);
+
+  // --- Role Specific Fields & File ID Selection ---
+  let fileInputId = null;
+
   if (role === "STUDENT") {
-    const prn = document.getElementById("studentPRN").value.trim();
-    const hostel = document.getElementById("studentHostel").value.trim();
-    const room = document.getElementById("studentRoom").value.trim();
-    const course = document.getElementById("studentCourse").value;
-    const year = document.getElementById("studentYear").value;
-    const dept = document.getElementById("studentDept").value;
-    const parentMobile = document.getElementById("parentMobile").value.trim();
+    formData.append("irn", document.getElementById("studentPRN").value.trim());
+    formData.append(
+      "hostelName",
+      document.getElementById("studentHostel").value.trim()
+    );
+    formData.append(
+      "roomNumber",
+      document.getElementById("studentRoom").value.trim()
+    );
+    formData.append("course", document.getElementById("studentCourse").value);
+    formData.append("year", document.getElementById("studentYear").value);
+    formData.append("department", document.getElementById("studentDept").value);
+    formData.append(
+      "parentMobile",
+      document.getElementById("parentMobile").value.trim()
+    );
 
-    payload.irn = prn;
-    payload.hostelName = hostel;
-    payload.roomNumber = room;
-    payload.course = course;
-    payload.year = year;
-    payload.department = dept;
-    payload.parentMobile = parentMobile;
+    fileInputId = "studentIdProof"; // ✅ Matches HTML ID
   } else if (role === "STAFF") {
-    const staffCategory = document.getElementById("staffCategory").value;
-    payload.staffCategory = staffCategory;
+    formData.append(
+      "staffCategory",
+      document.getElementById("staffCategory").value
+    );
+    fileInputId = "staffIdProof"; // ✅ Matches HTML ID
+  } else if (role === "WARDEN") {
+    fileInputId = "wardenIdProof"; // ✅ Matches HTML ID
+  }
+
+  // --- Handle Mandatory ID Proof ---
+  // We get the specific input based on the role selected above
+  const fileInput = fileInputId ? document.getElementById(fileInputId) : null;
+
+  if (fileInput && fileInput.files[0]) {
+    // The backend expects the param name "idProof"
+    formData.append("idProof", fileInput.files[0]);
+  } else if (role !== "ADMIN") {
+    // Admin might be exempt, but others must upload
+    alert("Please upload your ID Proof file.");
+    return;
   }
 
   // --- Send to Backend ---
   try {
     const response = await fetch(`${API_URL}/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: formData, // Content-Type is auto-set
     });
 
     if (response.ok) {
@@ -210,11 +212,11 @@ registerForm.addEventListener("submit", async (e) => {
         msg += `Your Login ID is: ${savedUser.userId}\n`;
         msg += `Please write this down!`;
       } else {
-        msg += `Please Login with your PRN.`;
+        msg += `Please Login with your IRN.`;
       }
 
       alert(msg);
-      window.location.href = "index.html";
+      window.location.reload(); // Refresh to clear form
     } else {
       const errorText = await response.text();
       alert("Registration Failed: " + errorText);

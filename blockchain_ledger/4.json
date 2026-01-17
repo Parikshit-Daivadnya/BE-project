@@ -1,0 +1,66 @@
+[ {
+  "index" : 1,
+  "timestamp" : [ 2026, 1, 17, 9, 22, 24, 298743400 ],
+  "transactions" : [ {
+    "transactionId" : "628ec65c-ec6e-40e2-8a8b-320588541902",
+    "complaintId" : "4",
+    "userId" : "T22025",
+    "action" : "RAISED",
+    "description" : "Complaint raised by Parikshit Daivadnya for room 504",
+    "timestamp" : [ 2026, 1, 17, 9, 22, 24, 298087600 ]
+  } ],
+  "previousHash" : "0",
+  "hash" : "501e687f39707192339d395449fd065e6c322042811567868083e8fc334768d3"
+}, {
+  "index" : 2,
+  "timestamp" : [ 2026, 1, 17, 9, 23, 54, 205116100 ],
+  "transactions" : [ {
+    "transactionId" : "cbef0b1c-d152-4a49-9255-da4d265e42d1",
+    "complaintId" : "4",
+    "userId" : "SYSTEM",
+    "action" : "ASSIGNED",
+    "description" : "Complaint assigned to staff Mr. cleaner",
+    "timestamp" : [ 2026, 1, 17, 9, 23, 54, 203040500 ]
+  } ],
+  "previousHash" : "501e687f39707192339d395449fd065e6c322042811567868083e8fc334768d3",
+  "hash" : "f2421dcbf5160dae7d07186a39e7a1d6d1dbb414a6334240e026a5f69aaeff78"
+}, {
+  "index" : 3,
+  "timestamp" : [ 2026, 1, 17, 9, 24, 57, 441526700 ],
+  "transactions" : [ {
+    "transactionId" : "f7ade702-0398-419e-9286-5c62e077447b",
+    "complaintId" : "4",
+    "userId" : "STF003",
+    "action" : "RESOLVED",
+    "description" : "Complaint resolved by staff Mr. cleaner",
+    "timestamp" : [ 2026, 1, 17, 9, 24, 57, 440512400 ]
+  } ],
+  "previousHash" : "f2421dcbf5160dae7d07186a39e7a1d6d1dbb414a6334240e026a5f69aaeff78",
+  "hash" : "079092854afe383dcff23907c278f527ca2a6b9765683acb65d96dc605afdcc0"
+}, {
+  "index" : 4,
+  "timestamp" : [ 2026, 1, 17, 9, 25, 26, 159287100 ],
+  "transactions" : [ {
+    "transactionId" : "46587061-1e6a-4ca4-b397-d81d2637dd2a",
+    "complaintId" : "4",
+    "userId" : "Student",
+    "action" : "ESCALATED",
+    "description" : "Escalated with proof: still uncleaned",
+    "timestamp" : [ 2026, 1, 17, 9, 25, 26, 157282000 ]
+  } ],
+  "previousHash" : "079092854afe383dcff23907c278f527ca2a6b9765683acb65d96dc605afdcc0",
+  "hash" : "f260c27cc7c51e02bf50dcc7d54dff8ed3d8ffa460c647108a218a02266b415c"
+}, {
+  "index" : 5,
+  "timestamp" : [ 2026, 1, 17, 9, 25, 47, 441507900 ],
+  "transactions" : [ {
+    "transactionId" : "86b9e5bf-7bd3-4a57-a98e-2f0bc76d702e",
+    "complaintId" : "4",
+    "userId" : "Warden",
+    "action" : "REVERTED",
+    "description" : "Status reverted to In Progress",
+    "timestamp" : [ 2026, 1, 17, 9, 25, 47, 439523100 ]
+  } ],
+  "previousHash" : "f260c27cc7c51e02bf50dcc7d54dff8ed3d8ffa460c647108a218a02266b415c",
+  "hash" : "ffe50ebf03361ead101e4d6b096e7ac3908989168b80d644361e723fcd4b3d63"
+} ]

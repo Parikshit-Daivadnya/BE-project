@@ -1,719 +1,773 @@
 /* =========================================================
-   Demo data (replace with API later)
+   Warden Dashboard (Final: Integrated Performance & Escalation)
    ========================================================= */
-const wardenName = localStorage.getItem("warden_name") || "Warden User";
-document.getElementById("wardenName").textContent = wardenName;
-document.getElementById("year").textContent = new Date().getFullYear();
 
-const staff = [
-  { id: "STF-101", name: "Amit (Electrician)" },
-  { id: "STF-102", name: "Nilesh (Plumber)" },
-  { id: "STF-103", name: "Karan (Network)" },
-  { id: "STF-104", name: "Pritesh (General)" },
-];
+const API_URL = "http://localhost:8080/api";
+const token = localStorage.getItem("jwt_token");
 
-let complaints = [
-  { id: "CMP-101", type: "Electrical", title: "Light not working", room: "B-201", slot: "10:00 AM – 12:00 PM", status: "new" },
-  { id: "CMP-102", type: "Plumbing",   title: "Tap leaking",      room: "A-108", slot: "02:00 PM – 04:00 PM", status: "assigned", staff: "Amit (Electrician)" },
-  { id: "CMP-103", type: "Internet",   title: "Wi-Fi disconnects",room: "C-310", slot: "06:00 PM – 08:00 PM", status: "progress", staff: "Karan (Network)" },
-  { id: "CMP-104", type: "Electrical", title: "Faulty AC",        room: "B-305", slot: "04:00 PM – 06:00 PM", status: "pendingApproval",
-    staff: "Amit (Electrician)", proofName: "IMG-20251111.jpg", proofUrl: "", remark: "AC capacitor replaced" },
-  { id: "CMP-105", type: "General",    title: "Chair broken",     room: "D-210", slot: "12:00 PM – 02:00 PM", status: "resolved", staff: "Pritesh (General)" },
-];
+// --- HELPER: Decode Token ---
+function parseJwt(token) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
 
-/* Demo student ratings */
-const ratings = [
-  { complaintId: "CMP-090", staff: "Amit (Electrician)",   rating: 4.8 },
-  { complaintId: "CMP-085", staff: "Amit (Electrician)",   rating: 4.5 },
-  { complaintId: "CMP-071", staff: "Nilesh (Plumber)",     rating: 4.2 },
-  { complaintId: "CMP-072", staff: "Nilesh (Plumber)",     rating: 4.0 },
-  { complaintId: "CMP-073", staff: "Nilesh (Plumber)",     rating: 3.8 },
-  { complaintId: "CMP-060", staff: "Karan (Network)",      rating: 4.6 },
-  { complaintId: "CMP-061", staff: "Karan (Network)",      rating: 4.9 },
-  { complaintId: "CMP-055", staff: "Pritesh (General)",    rating: 4.7 },
-  { complaintId: "CMP-056", staff: "Pritesh (General)",    rating: 4.8 },
-];
+if (!token) window.location.href = "../auth/index.html";
 
-let notices = [
-  { id: "N-01", title: "Water Maintenance", body: "Water supply off today 2–4 PM (Block B).", date: "11 Nov 2025" },
-  { id: "N-02", title: "Pest Control",      body: "Rooms 201–230 Friday 10 AM onward.",       date: "10 Nov 2025" },
-];
+const userPayload = parseJwt(token);
+const currentUserId = userPayload ? userPayload.sub : null;
 
-const recentActivity = [
-  "CMP-105: Resolved — Chair repaired by Pritesh",
-  "CMP-104: Proof submitted — awaiting approval",
-  "CMP-103: In-Progress — Router replaced",
-];
+// GLOBAL STATE
+let complaints = [];
+let staff = [];
+let notices = [];
+let resaleItems = [];
+
+// =========================================================
+// 1. INITIAL DATA FETCH
+// =========================================================
+
+async function initDashboard() {
+  try {
+    await Promise.all([
+      loadProfile(),
+      loadStaffList(),
+      loadComplaints(),
+      loadNotices(),
+      loadResaleItems(),
+    ]);
+
+    refreshKPIs();
+    renderPending();
+    renderRecent();
+    renderNotices();
+    renderComplaintsTable();
+    renderNoticesFull();
+    renderProofGrid();
+    renderPerformance(); // Now calculates ratings!
+  } catch (e) {
+    console.error("Initialization failed:", e);
+  }
+}
+
+// FETCH PROFILE
+async function loadProfile() {
+  try {
+    const res = await fetch(`${API_URL}/users/${currentUserId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const user = await res.json();
+      document.getElementById("wardenName").textContent = user.name;
+      // document.getElementById("year").textContent = new Date().getFullYear();
+
+      localStorage.setItem("warden_name", user.name);
+      localStorage.setItem("warden_email", user.email);
+      localStorage.setItem("warden_phone", user.mobile);
+    }
+  } catch (e) {
+    console.error("Profile error", e);
+  }
+}
+
+// FETCH STAFF
+async function loadStaffList() {
+  try {
+    const res = await fetch(`${API_URL}/users/role/STAFF`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      staff = data.map((s) => ({
+        id: s.userId,
+        name: `${s.name} (${s.staffCategory || "General"})`,
+        role: (s.staffCategory || "").toLowerCase(),
+      }));
+    }
+  } catch (e) {
+    console.error("Staff error", e);
+  }
+}
+
+// FETCH COMPLAINTS
+async function loadComplaints() {
+  try {
+    const res = await fetch(`${API_URL}/complaints`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      complaints = data.map((c) => ({
+        id: String(c.id),
+        type: c.category,
+        title: c.description,
+        room: c.roomNumber,
+        slot: c.timeSlot || "Any Time",
+        status: mapStatus(c.status),
+        staff: c.staff ? `${c.staff.name}` : null,
+        date: c.createdAt,
+        proofUrl: c.proofImage || "",
+        rating: c.rating || 0,
+        priority: c.priority || "Medium", // ✅ Added: Capture Priority for Badges
+      }));
+    }
+  } catch (e) {
+    console.error("Complaints error", e);
+  }
+}
+
+function mapStatus(backendStatus) {
+  if (backendStatus === "RAISED") return "new";
+  if (backendStatus === "ASSIGNED") return "assigned"; // ✅ Added: Handles assigned state
+  if (backendStatus === "IN_PROGRESS") return "progress";
+  if (backendStatus === "RESOLVED") return "resolved";
+  if (backendStatus === "CLOSED") return "resolved";
+  if (backendStatus === "ESCALATED") return "escalated";
+  return "new";
+}
+
+// FETCH NOTICES
+async function loadNotices() {
+  try {
+    const res = await fetch(`${API_URL}/notices`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      notices = data.map((n) => ({
+        id: n.id,
+        title: n.title,
+        body: n.description,
+        date: new Date(n.date).toLocaleDateString(),
+      }));
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// FETCH RESALE
+async function loadResaleItems() {
+  try {
+    const res = await fetch(`${API_URL}/resale`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      resaleItems = data.map((i) => ({
+        id: i.id,
+        name: i.name,
+        price: i.price,
+        owner: i.ownerName,
+        date: i.postedDate,
+        sold: i.sold,
+      }));
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+initDashboard();
 
 /* =========================================================
    Helpers
    ========================================================= */
 const $ = (id) => document.getElementById(id);
-const fmtStatus   = (s) => s.replace(/([A-Z])/g, " $1"); // "pendingApproval" -> "pending Approval"
+const fmtStatus = (s) => s.replace(/([A-Z])/g, " $1");
 const statusClass = (s) => `s-${s}`;
 
 /* =========================================================
-   Sidebar nav switching (updated: resale is a right-side view)
+   Sidebar Navigation
    ========================================================= */
 document.querySelectorAll(".nav-link").forEach((btn) => {
   btn.addEventListener("click", () => {
+    // If it's the "Post Notice" button, don't switch views, just open modal
+    if (btn.id === "navNotices") return;
+
     const view = btn.dataset.view;
+    if (!view) return;
 
-    // Default behavior: switch visible view panels
-    document.querySelectorAll(".nav-link").forEach((b) => b.classList.remove("active"));
+    document
+      .querySelectorAll(".nav-link")
+      .forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
+    document
+      .querySelectorAll(".view")
+      .forEach((v) => v.classList.remove("active"));
+    document.getElementById(`view-${view}`).classList.add("active");
 
-    document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
-    const viewEl = document.getElementById(`view-${view}`);
-    if (viewEl) viewEl.classList.add("active");
-
-    // Lazy render the view when opened
-    if (view === "complaints")  renderComplaintsTable();
-    if (view === "notices")     renderNoticesFull();
+    if (view === "complaints") renderComplaintsTable();
+    if (view === "notices") renderNoticesFull();
     if (view === "performance") renderPerformance();
-    if (view === "proofs")      renderProofGrid();
-    if (view === "resale")      renderResale();   // NEW: render resale into right-side view
+    if (view === "proofs") renderProofGrid();
+    if (view === "resale") renderResale();
   });
 });
 
 /* =========================================================
-   KPIs + Overview lists
+   KPIs
    ========================================================= */
 function refreshKPIs() {
-  $("kpiNew").textContent       = complaints.filter((c) => c.status === "new").length;
-  $("kpiProgress").textContent  = complaints.filter((c) => ["progress", "assigned"].includes(c.status)).length;
-  $("kpiResolved").textContent  = complaints.filter((c) => c.status === "resolved").length;
-  $("kpiEscalated").textContent = complaints.filter((c) => c.status === "escalated").length;
-}
-
-function renderPending() {
-  const list = complaints
-    .filter((c) => ["new", "assigned", "progress", "pendingApproval", "escalated"].includes(c.status))
-    .slice(0, 6);
-
-  $("pendingList").innerHTML = list.map((c) => {
-    const canAssign = c.status === "new"; // only NEW can be assigned
-    const actionBtn = c.status === "pendingApproval"
-      ? `<button class="btn-primary" onclick="openApprove('${c.id}')">Review Proof</button>`
-      : (canAssign ? `<button class="btn-primary" onclick="openAssign('${c.id}')">Assign Staff</button>` : ``);
-
-    return `
-      <li>
-        <div>
-          <strong>${c.id}</strong> — ${c.title}
-          <div class="muted">${c.type} • Room ${c.room} • ${fmtStatus(c.status)}</div>
-        </div>
-        <div class="row-actions">
-          <button class="btn-ghost" onclick="openView('${c.id}')">View Details</button>
-          ${actionBtn}
-        </div>
-      </li>`;
-  }).join("");
-}
-
-function renderRecent() {
-  $("recentList").innerHTML = recentActivity.map((a) => `<li><span>${a}</span></li>`).join("");
-}
-
-function renderNotices() {
-  $("noticeList").innerHTML = notices.slice(0, 5).map((n) => `
-    <li>
-      <div>
-        <strong>${n.title}</strong>
-        <div class="muted">${n.date}</div>
-      </div>
-    </li>`).join("");
+  $("kpiNew").textContent = complaints.filter((c) => c.status === "new").length;
+  $("kpiProgress").textContent = complaints.filter((c) =>
+    ["progress", "assigned"].includes(c.status)
+  ).length;
+  $("kpiResolved").textContent = complaints.filter(
+    (c) => c.status === "resolved"
+  ).length;
+  $("kpiEscalated").textContent = complaints.filter(
+    (c) => c.status === "escalated"
+  ).length;
 }
 
 /* =========================================================
-   Complaints table
+   Pending & Recent Lists
+   ========================================================= */
+function renderPending() {
+  const list = complaints
+    .filter((c) =>
+      ["new", "assigned", "progress", "escalated"].includes(c.status)
+    )
+    .slice(0, 6);
+
+  $("pendingList").innerHTML = list
+    .map((c) => {
+      let actionBtn = "";
+
+      // ✅ Update: Only show assign button if new. If assigned, show name.
+      if (c.status === "new") {
+        actionBtn = `<button class="btn-primary" onclick="openAssign('${c.id}')">Assign Staff</button>`;
+      } else if (c.status === "assigned" || c.status === "progress") {
+        actionBtn = `<span class="muted" style="font-size:0.85em">👷 ${
+          c.staff || "Staff"
+        }</span>`;
+      } else if (c.status === "escalated") {
+        actionBtn = `<button class="btn-primary" style="background-color:#d35400;" onclick="reviewEscalation('${c.id}')">Review</button>`;
+      }
+
+      return `
+      <li>
+        <div>
+          <strong>#${c.id}</strong> — ${c.title.substring(0, 30)}...
+          <div class="muted">${c.type} • Room ${c.room} • ${fmtStatus(
+        c.status
+      )}</div>
+          <div class="muted" style="color:var(--blue); font-size:0.9em;">🕒 Slot: ${
+            c.slot
+          }</div>
+        </div>
+        <div class="row-actions">${actionBtn}</div>
+      </li>`;
+    })
+    .join("");
+}
+
+function renderRecent() {
+  const recent = complaints.filter((c) => c.status === "resolved").slice(0, 3);
+  $("recentList").innerHTML = recent
+    .map(
+      (c) =>
+        `<li><span>Complaint #${c.id} resolved by ${
+          c.staff || "Staff"
+        }</span></li>`
+    )
+    .join("");
+}
+
+function renderNotices() {
+  $("noticeList").innerHTML = notices
+    .slice(0, 5)
+    .map(
+      (n) =>
+        `<li><div><strong>${n.title}</strong><div class="muted">${n.date}</div></div></li>`
+    )
+    .join("");
+}
+
+/* =========================================================
+   Complaints Table
    ========================================================= */
 $("filterStatus").addEventListener("change", renderComplaintsTable);
 
 function renderComplaintsTable() {
   const filter = $("filterStatus").value;
-  const list = complaints.filter((c) => (filter === "all" ? true : c.status === filter));
+  const list = complaints.filter((c) =>
+    filter === "all" ? true : c.status === filter
+  );
 
-  $("complaintsBody").innerHTML = list.map((c) => {
-    let actionHtml = "";
+  $("complaintsBody").innerHTML = list
+    .map((c) => {
+      let actionHtml = "";
 
-    // Explicit actions per status
-    if (c.status === "pendingApproval") {
-      actionHtml = `<button class="btn-primary" onclick="openApprove('${c.id}')">Approve</button>`;
+      // ✅ Update: Logic to hide Assign button if already assigned
+      if (c.status === "new") {
+        actionHtml = `<button class="btn-primary" onclick="openAssign('${c.id}')">Assign</button>`;
+      } else if (c.status === "assigned") {
+        actionHtml = `<span class="muted">Assigned: ${c.staff}</span>`;
+      } else if (c.status === "escalated") {
+        actionHtml = `<button class="btn-primary" style="background-color:#d35400;" onclick="reviewEscalation('${c.id}')">Review Proof</button>`;
+      } else if (c.status === "resolved") {
+        actionHtml = `<button class="btn-ghost" onclick="revertComplaint('${c.id}')">Revert</button>`;
+      } else {
+        actionHtml = `<span class="muted">${c.status}</span>`;
+      }
 
-    } else if (c.status === "new") {
-      actionHtml = `<button class="btn-primary" onclick="openAssign('${c.id}')">Assign</button>`;
-
-    } else if (c.status === "assigned") {
-      // Show a disabled "Assigned" button with tooltip to whom
-      const to = c.staff ? `Assigned to ${c.staff}` : "Assigned";
-      actionHtml = `<button class="btn-disabled" disabled title="${to}">Assigned</button>`;
-
-    } else if (c.status === "progress") {
-      actionHtml = `<button class="btn-disabled" disabled title="${c.staff ? 'In progress by ' + c.staff : 'In progress'}">In Progress</button>`;
-
-    } else if (c.status === "resolved") {
-      actionHtml = `<button class="btn-disabled" disabled title="Completed">Resolved</button>`;
-
-    } else if (c.status === "escalated") {
-      actionHtml = `<button class="btn-disabled" disabled title="Escalated to Warden">Escalated</button>`;
-
-    } else {
-      actionHtml = `<span class="muted">—</span>`;
-    }
-
-    return `
+      // ✅ Corrected Table Row Return (Including Priority Badge)
+      return `
       <tr>
         <td>${c.id}</td>
-        <td>${c.type}</td>
+        <td>${c.type} <br> ${getPriorityBadge(c.priority)}</td>
         <td>${c.title}</td>
         <td>${c.room}</td>
-        <td>${c.slot || "-"}</td>
-        <td><span class="status ${statusClass(c.status)}">${fmtStatus(c.status)}</span></td>
-        <td>
-          <button class="btn-ghost" onclick="openView('${c.id}')">View</button>
-          ${actionHtml}
-        </td>
+        <td>${c.slot}</td>
+        <td><span class="status ${statusClass(c.status)}">${fmtStatus(
+        c.status
+      )}</span></td>
+        <td>${actionHtml}</td>
       </tr>`;
-  }).join("");
+    })
+    .join("");
 }
-
 
 /* =========================================================
-   Assign Staff (NO time slot here)
+   Assign Staff (Robust Logic with Safety Fallback)
    ========================================================= */
-const assignModal       = $("assignModal");
-const assignForm        = $("assignForm");
-const assignClose       = $("assignClose");
-const assignCancel      = $("assignCancel");
-const assignStaff       = $("assignStaff");
-const assignComplaintId = $("assignComplaintId");
+const assignModal = document.getElementById("assignModal");
+const assignForm = document.getElementById("assignForm");
+const assignClose = document.getElementById("assignClose");
+const assignStaff = document.getElementById("assignStaff");
+const assignComplaintId = document.getElementById("assignComplaintId");
 
-// dropdown options
-if (assignStaff) {
-  assignStaff.innerHTML = staff.map((s) => `<option value="${s.name}">${s.name}</option>`).join("");
-}
+window.openAssign = (id) => {
+  if (!assignComplaintId || !assignModal) return;
 
-window.openAssign = (id) => { if (assignComplaintId) { assignComplaintId.value = id; assignModal.classList.add("open"); } };
-function closeAssign(){ assignModal?.classList.remove("open"); }
-assignClose?.addEventListener("click", closeAssign);
-assignCancel?.addEventListener("click", closeAssign);
-assignModal?.addEventListener("click", (e) => { if (e.target === assignModal) closeAssign(); });
+  assignComplaintId.value = id;
 
-assignForm?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const id  = assignComplaintId?.value;
-  const idx = complaints.findIndex((c) => c.id === id);
-  if (idx > -1) {
-    complaints[idx].status = "assigned";
-    complaints[idx].staff  = assignStaff.value;
-    recentActivity.unshift(`${id}: Assigned to ${assignStaff.value}`);
+  // 1. Get the Complaint Category (Safely)
+  const currentComplaint = complaints.find((c) => String(c.id) === String(id));
+  const category =
+    currentComplaint && currentComplaint.type
+      ? currentComplaint.type.toLowerCase()
+      : "general";
+
+  console.log("Assigning Complaint ID:", id, "Category:", category);
+
+  // 2. Filter Staff (Safely)
+  let filteredStaff = [];
+  try {
+    filteredStaff = staff.filter((s) => {
+      if (!s.role) return false;
+      const role = s.role.toLowerCase();
+
+      // Match Logic
+      if (category.includes("electr") && role.includes("electr")) return true;
+      if (category.includes("plumb") && role.includes("plumb")) return true;
+      if (
+        (category.includes("net") || category.includes("wifi")) &&
+        (role.includes("net") || role.includes("wifi"))
+      )
+        return true;
+      if (
+        (category.includes("clean") || category.includes("house")) &&
+        (role.includes("clean") || role.includes("house"))
+      )
+        return true;
+      if (category.includes("carpen") && role.includes("carpen")) return true;
+
+      // Fallback: If category is 'Other', allow 'General' staff
+      if (category === "other" && (role === "general" || role === "other"))
+        return true;
+
+      return false;
+    });
+  } catch (err) {
+    console.warn("Filtering error, showing all staff:", err);
+    filteredStaff = []; // Fallback to empty to trigger "Show All"
   }
-  closeAssign();
-  refreshKPIs(); renderPending(); renderComplaintsTable(); renderProofGrid(); // keep proofs view fresh too
-  alert(`Assigned ${id} to ${assignStaff.value} (demo).`);
-});
+
+  // 3. Render Dropdown
+  const listToShow = filteredStaff.length > 0 ? filteredStaff : staff;
+  const label =
+    filteredStaff.length > 0
+      ? "Recommended Specialists"
+      : "All Staff (No specific match)";
+
+  if (assignStaff) {
+    assignStaff.innerHTML =
+      `<option value="" disabled selected>-- ${label} --</option>` +
+      listToShow
+        .map((s) => `<option value="${s.id}">${s.name}</option>`)
+        .join("");
+  }
+
+  assignModal.classList.add("open");
+};
+
+function closeAssign() {
+  if (assignModal) assignModal.classList.remove("open");
+}
+if (assignClose) assignClose.addEventListener("click", closeAssign);
+
+// ✅ Fixed Submission Handler
+if (assignForm) {
+  assignForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const complaintId = assignComplaintId.value;
+    const staffId = assignStaff.value;
+
+    if (!staffId) {
+      alert("Please select a staff member first.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/complaints/${complaintId}/assign`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ staffId: staffId }),
+      });
+
+      if (res.ok) {
+        alert("Assigned Successfully!");
+        closeAssign();
+        await loadComplaints();
+        refreshKPIs();
+        renderPending();
+        renderComplaintsTable();
+      } else {
+        const errText = await res.text();
+        alert("Failed to assign: " + errText);
+      }
+    } catch (err) {
+      console.error("Assignment Network Error:", err);
+      alert("Network Error: Could not assign staff.");
+    }
+  });
+}
 
 /* =========================================================
-   Approve / Reject Resolution
+   Escalation Review & Revert
    ========================================================= */
-const approveModal   = $("approveModal");
-const approveClose   = $("approveClose");
-const approvePreview = $("approvePreview");
+const approveModal = $("approveModal");
 const approveSummary = $("approveSummary");
-const approveBtn     = $("approveBtn");
-const rejectBtn      = $("rejectBtn");
-let approveCurrentId = null;
+const approvePreview = $("approvePreview");
+const approveBtn = $("approveBtn");
+const approveClose = $("approveClose");
 
-window.openApprove = (id) => {
+window.reviewEscalation = (id) => {
   const c = complaints.find((x) => x.id === id);
   if (!c) return;
-  approveCurrentId = id;
 
-  approveSummary.innerHTML =
-    `<strong>${c.id}</strong> — ${c.title}
-     <div class="muted">${c.type} • Room ${c.room} • ${c.staff || "-"}</div>
-     <div class="muted">${c.remark || ""}</div>`;
+  if (approveSummary && approvePreview) {
+    approveSummary.innerHTML = `
+        <strong>Complaint #${c.id} (ESCALATED)</strong>
+        <p>${c.title}</p>
+        <p style="color:red; font-weight:bold;">Student report: Not Solved</p>
+      `;
 
-  if (c.proofUrl) approvePreview.innerHTML = `<img src="${c.proofUrl}" alt="proof" />`;
-  else approvePreview.textContent = c.proofName ? c.proofName : "No image";
+    // Dynamic Image Path
+    if (c.proofUrl) {
+      const baseUrl = API_URL.replace("/api", "");
+      approvePreview.innerHTML = `<img src="${baseUrl}${c.proofUrl}" style="max-width:100%; border-radius:8px; border:1px solid #ddd;">`;
+    } else {
+      approvePreview.innerHTML =
+        "<p class='muted'>No proof image available.</p>";
+    }
 
-  approveModal?.classList.add("open");
+    approveBtn.textContent = "Revert to In-Progress";
+    approveBtn.className = "btn-primary";
+    approveBtn.onclick = () => revertComplaint(c.id);
+
+    approveModal.classList.add("open");
+  }
 };
-function closeApprove(){ approveModal?.classList.remove("open"); }
-approveClose?.addEventListener("click", closeApprove);
-approveModal?.addEventListener("click", (e) => { if (e.target === approveModal) closeApprove(); });
 
-approveBtn?.addEventListener("click", () => {
-  const idx = complaints.findIndex((c) => c.id === approveCurrentId);
-  if (idx > -1) {
-    complaints[idx].status = "resolved";
-    recentActivity.unshift(`${approveCurrentId}: Approved & marked Resolved`);
+function closeApprove() {
+  approveModal?.classList.remove("open");
+}
+if (approveClose) approveClose.addEventListener("click", closeApprove);
+
+window.revertComplaint = async (id) => {
+  if (!confirm("Revert to IN_PROGRESS?")) return;
+  try {
+    const res = await fetch(`${API_URL}/complaints/${id}/revert`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      alert("Status Reverted!");
+      closeApprove();
+      await loadComplaints();
+      renderComplaintsTable();
+      refreshKPIs();
+      renderPending();
+    } else {
+      alert("Failed to revert: " + (await res.text()));
+    }
+  } catch (e) {
+    console.error(e);
   }
-  closeApprove();
-  refreshKPIs(); renderPending(); renderComplaintsTable(); renderProofGrid();
-});
-rejectBtn?.addEventListener("click", () => {
-  const idx = complaints.findIndex((c) => c.id === approveCurrentId);
-  if (idx > -1) {
-    complaints[idx].status = "progress";
-    recentActivity.unshift(`${approveCurrentId}: Rejected (back to In-Progress)`);
-  }
-  closeApprove();
-  refreshKPIs(); renderPending(); renderComplaintsTable(); renderProofGrid();
-});
+};
 
 /* =========================================================
-   Notices
+   Notices (FIXED: Added Sidebar Action)
    ========================================================= */
-const noticeModal      = $("noticeModal");
-const noticeForm       = $("noticeForm");
-const noticeClose      = $("noticeClose");
-const noticeCancel     = $("noticeCancel");
-const noticeTitleInput = $("noticeTitleInput");
-const noticeBodyInput  = $("noticeBodyInput");
-const postNoticeBtn    = $("postNoticeBtn");
-const postNoticeBtn2   = $("postNoticeBtn2");
+const noticeModal = $("noticeModal");
+const noticeForm = $("noticeForm");
+const postNoticeBtn = $("postNoticeBtn");
+const postNoticeBtn2 = $("postNoticeBtn2"); // Button in "Notices" view
+const navNoticeBtn = $("navNotices"); // Button in Sidebar
+const noticeClose = $("noticeClose");
 
-function openNotice(){ noticeModal?.classList.add("open"); }
-function closeNotice(){ noticeModal?.classList.remove("open"); }
-[postNoticeBtn, postNoticeBtn2].forEach((b)=> b?.addEventListener("click", openNotice));
-noticeClose?.addEventListener("click", closeNotice);
-noticeCancel?.addEventListener("click", closeNotice);
-noticeModal?.addEventListener("click", (e)=>{ if(e.target===noticeModal) closeNotice(); });
+function openNotice() {
+  noticeModal?.classList.add("open");
+}
+function closeNotice() {
+  noticeModal?.classList.remove("open");
+}
 
-noticeForm?.addEventListener("submit",(e)=>{
+if (postNoticeBtn) postNoticeBtn.addEventListener("click", openNotice);
+if (postNoticeBtn2) postNoticeBtn2.addEventListener("click", openNotice); // ✅ Added
+if (navNoticeBtn) navNoticeBtn.addEventListener("click", openNotice); // ✅ Added Sidebar Listener
+
+if (noticeClose) noticeClose.addEventListener("click", closeNotice);
+
+noticeForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const t = noticeTitleInput.value.trim();
-  const b = noticeBodyInput.value.trim();
-  if(!t || !b) return;
-  notices.unshift({ id:`N-${(Math.random()*10000|0)}`, title:t, body:b, date:new Date().toLocaleDateString() });
-  closeNotice(); noticeForm.reset();
-  renderNotices(); renderNoticesFull();
-  alert("Notice published (demo).");
+  const title = $("noticeTitleInput").value.trim();
+  const desc = $("noticeBodyInput").value.trim();
+
+  try {
+    const res = await fetch(`${API_URL}/notices`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: title,
+        description: desc,
+        postedBy: "Warden",
+      }),
+    });
+
+    if (res.ok) {
+      alert("Notice Published!");
+      closeNotice();
+      noticeForm.reset();
+      await loadNotices();
+      renderNotices();
+      renderNoticesFull();
+    }
+  } catch (e) {
+    console.error(e);
+  }
 });
 
-function renderNoticesFull(){
-  $("noticesFull").innerHTML = notices.map(n=>`
-    <li>
-      <div>
-        <strong>${n.title}</strong>
-        <div class="muted">${n.date}</div>
-        <div>${n.body}</div>
-      </div>
-    </li>`).join("");
+function renderNoticesFull() {
+  $("noticesFull").innerHTML = notices
+    .map(
+      (n) =>
+        `<li><div><strong>${n.title}</strong><div class="muted">${n.date}</div></div></li>`
+    )
+    .join("");
 }
 
 /* =========================================================
-   View details (simple for now)
+   PERFORMANCE VIEW (Now Calculates Ratings!)
    ========================================================= */
-window.openView = (id)=>{
-  const c = complaints.find(x=>x.id===id);
-  if(!c) return;
-  alert(`${c.id}\n${c.title}\n${c.type} — Room ${c.room}\nStatus: ${fmtStatus(c.status)}\nStaff: ${c.staff||"-"}\nSlot: ${c.slot||"-"}`);
-};
-
-/* =========================================================
-   PERFORMANCE VIEW (avg rating, resolved counts, charts)
-   ========================================================= */
-function computeStaffStats(){
+function computeStaffStats() {
   const stats = {};
-  staff.forEach(s => { stats[s.name] = { name:s.name, assigned:0, progress:0, resolved:0, ratings:[], avg:0 }; });
 
-  complaints.forEach(c=>{
-    if(!c.staff || !stats[c.staff]) return;
-    if(c.status==="assigned") stats[c.staff].assigned++;
-    if(c.status==="progress" || c.status==="pendingApproval") stats[c.staff].progress++;
-    if(c.status==="resolved") stats[c.staff].resolved++;
+  // 1. Initialize Staff Map
+  staff.forEach((s) => {
+    stats[s.name] = {
+      name: s.name,
+      assigned: 0,
+      resolved: 0,
+      totalStars: 0, // Sum of all ratings
+      ratedCount: 0, // How many jobs were rated
+      avg: 0,
+    };
   });
 
-  ratings.forEach(r=>{ if(stats[r.staff]) stats[r.staff].ratings.push(r.rating); });
-  Object.values(stats).forEach(s=>{ s.avg = s.ratings.length ? (s.ratings.reduce((a,b)=>a+b,0) / s.ratings.length) : 0; });
+  // 2. Aggregate Data
+  complaints.forEach((c) => {
+    const staffName = c.staff;
+    if (!staffName) return;
+
+    // Find staff entry (matches name string)
+    const key = Object.keys(stats).find((k) => k.includes(staffName));
+    if (key) {
+      if (c.status !== "new") stats[key].assigned++;
+
+      if (c.status === "resolved") {
+        stats[key].resolved++;
+        // ✅ Sum Ratings
+        if (c.rating > 0) {
+          stats[key].totalStars += c.rating;
+          stats[key].ratedCount++;
+        }
+      }
+    }
+  });
+
+  // 3. Calculate Averages
+  Object.values(stats).forEach((s) => {
+    if (s.ratedCount > 0) {
+      s.avg = (s.totalStars / s.ratedCount).toFixed(1);
+    } else {
+      s.avg = "-";
+    }
+  });
+
   return stats;
 }
 
-function renderBarChart(containerId, rows, maxValue, formatValue = v=>String(v)){
-  const root = $(containerId);
-  root.innerHTML = rows.map(r=>{
-    const pct = maxValue ? Math.round((r.value / maxValue) * 100) : 0;
-    return `
-      <div class="bar-row">
-        <div class="bar-label" title="${r.label}">${r.label}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-        <div class="bar-value">${formatValue(r.value)}</div>
-      </div>`;
-  }).join("");
-}
-
-function renderPerformance(){
+function renderPerformance() {
   const statsObj = computeStaffStats();
   const rows = Object.values(statsObj);
 
-  $("perfTotalStaff").textContent    = rows.length;
-  $("perfTotalResolved").textContent = rows.reduce((a,s)=>a+s.resolved,0);
-  const allRatings = rows.flatMap(s=>s.ratings);
-  $("perfAvgAll").textContent = (allRatings.length ? (allRatings.reduce((a,b)=>a+b,0)/allRatings.length) : 0).toFixed(1);
+  $("perfTotalStaff").textContent = staff.length;
+  $("perfTotalResolved").textContent = rows.reduce((a, s) => a + s.resolved, 0);
 
-  $("perfBody").innerHTML = rows.map(s=>`
-    <tr>
-      <td>${s.name}</td>
-      <td>${s.resolved}</td>
-      <td>${s.assigned}</td>
-      <td>${s.progress}</td>
-      <td>${s.avg.toFixed(1)}</td>
-      <td>${s.ratings.length}</td>
-    </tr>`).join("");
+  // Render Table with Stars
+  $("perfBody").innerHTML = rows
+    .map((s) => {
+      const avgColor =
+        s.avg >= 4 ? "#27ae60" : s.avg === "-" ? "#999" : "#e67e22";
 
-  const resolvedRows = rows.map(s=>({ label:s.name, value:s.resolved }));
-  const ratingRows   = rows.map(s=>({ label:s.name, value:Number(s.avg.toFixed(2)) }));
-
-  const maxResolved = Math.max(1, ...resolvedRows.map(r=>r.value));
-  renderBarChart("chartResolved", resolvedRows, maxResolved, v=>v);
-
-  const maxRating = 5; // fixed scale
-  renderBarChart("chartRating", ratingRows, maxRating, v=>v.toFixed(1));
+      return `
+        <tr>
+          <td>${s.name}</td>
+          <td>${s.resolved}</td>
+          <td>${s.assigned}</td>
+          <td>-</td>
+          <td style="font-weight:bold; color: ${avgColor}">
+            ${s.avg !== "-" ? s.avg + " ★" : "No Ratings"}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
 }
 
 /* =========================================================
-   PROOFS VIEW (thumbnails -> approve modal)
+   PROOFS VIEW
    ========================================================= */
-function renderProofGrid(){
+function renderProofGrid() {
   const container = document.getElementById("proofGrid");
-  const items = complaints
-    .filter(c => c.status === "pendingApproval")
-    .slice().reverse(); // newest first (placeholder)
+  const items = complaints.filter((c) => c.status === "escalated");
 
-  if (!items.length){
+  if (!items.length) {
     container.innerHTML = `<p class="muted" style="margin:6px 0">No proofs awaiting review.</p>`;
     return;
   }
 
-  container.innerHTML = items.map(c => {
-    const src = c.proofUrl || "";
-    const thumb = src ? `<img src="${src}" alt="proof for ${c.id}">` : "";
-    return `
-      <button class="proof-card" data-id="${c.id}" title="Review ${c.id}">
-        <div class="proof-thumb">
-          ${thumb || `<svg viewBox="0 0 24 24" width="48" height="48" style="margin:18% auto;opacity:.35">
-              <path fill="currentColor" d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14l4-4h12a2 2 0 0 0 2-2zM8.5 11A1.5 1.5 0 1 1 10 9.5 1.5 1.5 0 0 1 8.5 11z"/>
-            </svg>`}
-        </div>
-        <div class="proof-meta">
-          <span class="pid">${c.id}</span>
-          <span class="ptitle">${c.title}</span>
-          <span class="pstaff">${c.staff || "—"}</span>
-        </div>
-      </button>`;
-  }).join("");
-
-  container.querySelectorAll(".proof-card").forEach(btn=>{
-    btn.addEventListener("click", () => openApprove(btn.dataset.id));
-  });
+  container.innerHTML = items
+    .map(
+      (c) => `
+      <div class="proof-card" onclick="reviewEscalation('${c.id}')" style="cursor:pointer; border:1px solid #d35400;">
+        <span>⚠️ Review Proof #${c.id}</span>
+      </div>`
+    )
+    .join("");
 }
 
 /* =========================================================
-   Top‐right buttons
+   Resale & Profile
    ========================================================= */
-$("logoutBtn")?.addEventListener("click", ()=> location.href = "../auth/index.html");
-$("notifBtn")?.addEventListener("click", ()=> alert("No new notifications."));
-$("profileBtn")?.addEventListener("click", ()=> alert("Warden profile opens here."));
-
-/* =========================================================
-   Initial render
-   ========================================================= */
-refreshKPIs();
-renderPending();
-renderRecent();
-renderNotices();
-renderComplaintsTable();
-renderNoticesFull();
-/* Optional: pre-render so views open instantly */
-renderPerformance();
-renderProofGrid();
-
-/* ================= Resale Market (Warden) - cleaned for right-side view =================== */
-/* Demo resale items (same shape used in student.js) */
-let resaleItems = [
-  { id:"RS-001", name:"Study Table", price:1200, owner:"Amit (B-203)", category:"furniture", date:"2025-11-10", img:"", desc:"Solid wood, good condition.", sold:false },
-  { id:"RS-002", name:"Router TP-Link", price:800, owner:"Neha (A-108)", category:"electronics", date:"2025-11-09", img:"", desc:"Dual band router, works fine.", sold:false },
-  { id:"RS-003", name:"DSA Book", price:250, owner:"Karan (C-310)", category:"books", date:"2025-11-08", img:"", desc:"Clean copy, few highlights.", sold:false },
-  { id:"RS-004", name:"Chair", price:400, owner:"Priya (B-401)", category:"furniture", date:"2025-11-07", img:"", desc:"Plastic chair, barely used.", sold:false },
-];
-
-/* DOM refs (no centered listing modal) */
-const rsSearch = document.getElementById("rsSearch");
-const rsCategory = document.getElementById("rsCategory");
-const rsSort = document.getElementById("rsSort");
-const rsGrid = document.getElementById("rsGrid");
-
-const rsDetailsModal = document.getElementById("rsDetailsModal");
-const rsDetClose = document.getElementById("rsDetClose");
-const rsDetCloseBtn = document.getElementById("rsDetCloseBtn");
-const rsDetImg = document.getElementById("rsDetImg");
-const rsDetName = document.getElementById("rsDetName");
-const rsDetPrice = document.getElementById("rsDetPrice");
-const rsDetOwner = document.getElementById("rsDetOwner");
-const rsDetDesc = document.getElementById("rsDetDesc");
-const rsMarkSold = document.getElementById("rsMarkSold");
-
-const postItemModal = document.getElementById("postItemModal");
-const rsPostBtn = document.getElementById("rsPostBtn");
-const piClose = document.getElementById("piClose");
-const piForm = document.getElementById("piForm");
-const piReset = document.getElementById("piReset");
-
-function formatDate(iso){ const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
-
-/* Render listing into the right-side view element #rsGrid */
-function renderResale(){
-  if (!rsGrid) return;
-  const q = rsSearch?.value?.trim().toLowerCase() || "";
-  const cat = rsCategory?.value || "all";
-  const sort = rsSort?.value || "new";
-
-  let list = resaleItems.filter(it => !it.sold);
-  if (cat !== "all") list = list.filter(it => it.category === cat);
-  if (q) list = list.filter(it => it.name.toLowerCase().includes(q) || (it.desc||"").toLowerCase().includes(q));
-
-  list.sort((a,b) => {
-    if (sort === "priceAsc") return a.price - b.price;
-    if (sort === "priceDesc") return b.price - a.price;
-    if (sort === "old") return new Date(a.date) - new Date(b.date);
-    return new Date(b.date) - new Date(a.date); // "new"
-  });
-
-  rsGrid.innerHTML = list.map(it => `
+function renderResale() {
+  const grid = document.getElementById("rsGrid");
+  if (!grid) return;
+  grid.innerHTML = resaleItems
+    .map(
+      (it) => `
     <div class="rs-card">
-      <div class="rs-thumb">${it.img ? `<img src="${it.img}" alt="">` : "🖼️"}</div>
-      <h4 class="rs-title">${it.name}</h4>
-      <p class="rs-price">₹ ${it.price}</p>
-      <p class="rs-meta">Posted by ${it.owner} • ${formatDate(it.date)}</p>
-      <div class="rs-actions">
-        <button class="rs-view" data-id="${it.id}">View Details</button>
-      </div>
-    </div>
-  `).join("");
-
-  // attach view handlers
-  rsGrid.querySelectorAll(".rs-view").forEach(btn => {
-    btn.addEventListener("click", () => openResaleDetails(btn.dataset.id));
-  });
+      <h4>${it.name}</h4>
+      <p>₹${it.price}</p>
+      ${
+        !it.sold
+          ? `<button onclick="markSold('${it.id}')">Mark Sold</button>`
+          : `<span class="muted">Sold</span>`
+      }
+    </div>`
+    )
+    .join("");
 }
 
-/* Details modal (kept as modal) */
-function openResaleDetails(id){
-  const it = resaleItems.find(x => x.id === id);
-  if(!it) return;
-  if (rsDetImg) {
-    rsDetImg.src = it.img || "";
-    rsDetImg.style.display = it.img ? "block" : "none";
+window.markSold = async (id) => {
+  if (!confirm("Mark as sold?")) return;
+  try {
+    await fetch(`${API_URL}/resale/${id}/sold`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    await loadResaleItems();
+    renderResale();
+  } catch (e) {
+    console.error(e);
   }
-  if (rsDetName) rsDetName.textContent = it.name;
-  if (rsDetPrice) rsDetPrice.textContent = "₹ " + it.price;
-  if (rsDetOwner) rsDetOwner.textContent = `Seller: ${it.owner} • Posted ${formatDate(it.date)}`;
-  if (rsDetDesc) rsDetDesc.textContent = it.desc || "—";
+};
 
-  if (rsMarkSold) {
-    rsMarkSold.onclick = () => {
-      it.sold = true;  // demo only
-      alert(`Marked ${it.name} as sold (demo).`);
-      closeResaleDetails();
-      renderResale();
-    };
-  }
-
-  if (rsDetailsModal) {
-    rsDetailsModal.classList.add("open");
-    document.body.classList.add("modal-open");
-  }
-}
-function closeResaleDetails(){
-  if (rsDetailsModal) {
-    rsDetailsModal.classList.remove("open");
-    document.body.classList.remove("modal-open");
-  }
-}
-rsDetClose?.addEventListener("click", closeResaleDetails);
-rsDetCloseBtn?.addEventListener("click", closeResaleDetails);
-rsDetailsModal?.addEventListener("click", e => { if (e.target === rsDetailsModal) closeResaleDetails(); });
-
-/* Wire up filters/search/sort */
-rsSearch?.addEventListener("input", renderResale);
-rsCategory?.addEventListener("change", renderResale);
-rsSort?.addEventListener("change", renderResale);
-
-/* Post Item modal handlers (kept as modal) */
-rsPostBtn?.addEventListener("click", () => {
-  if (!postItemModal) return alert("Post Item modal not found.");
-  postItemModal.classList.add("open");
-  document.body.classList.add("modal-open");
-  const el = document.getElementById("piName");
-  if (el) el.focus();
+$("logoutBtn")?.addEventListener("click", () => {
+  localStorage.removeItem("jwt_token");
+  location.href = "../auth/index.html";
 });
-function closePostItem(){
-  postItemModal?.classList.remove("open");
-  document.body.classList.remove("modal-open");
-}
-piClose?.addEventListener("click", closePostItem);
-postItemModal?.addEventListener("click", e => { if (e.target === postItemModal) closePostItem(); });
-piReset?.addEventListener("click", () => piForm?.reset());
 
-piForm?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = document.getElementById("piName").value.trim();
-  const price = parseInt(document.getElementById("piPrice").value, 10) || 0;
-  const category = document.getElementById("piCategory").value;
-  const desc = document.getElementById("piDesc").value.trim();
-  const file = document.getElementById("piImg").files[0];
-
-  const newItem = {
-    id: "RS-" + String(Math.floor(Math.random()*900)+100),
-    name, price, category, desc,
-    owner: "Warden • Institute",
-    date: new Date().toISOString().slice(0,10),
-    img: file ? URL.createObjectURL(file) : "",
-    sold:false
-  };
-  resaleItems.unshift(newItem);
-  alert("Item posted (demo).");
-  piForm.reset();
-  closePostItem();
-  renderResale();
-});
-/* ================= end Resale code =================== */
-
-
-/* ================= Warden Profile Modal (new changes) ================= */
-
-// refs
-/* ================= Warden Profile Modal (new changes) ================= */
-
-// Modal references
-const wpModal = document.getElementById("wardenProfileModal");
-const wpClose = document.getElementById("wpClose");
-const wpForm = document.getElementById("wpForm");
-
-// Left panel
-const wpNameLeft = document.getElementById("wpNameLeft");
-const wpMiniMeta = document.getElementById("wpMiniMeta");
-const wpPhoto = document.getElementById("wpPhoto");
-const wpPhotoFallback = document.getElementById("wpPhotoFallback");
-const wpPhotoInput = document.getElementById("wpPhotoInput");
-const wpChangePhoto = document.getElementById("wpChangePhoto");
-
-// Form fields
-const wpFullName = document.getElementById("wpFullName");
-const wpEmail = document.getElementById("wpEmail");
-const wpPhone = document.getElementById("wpPhone");
-const wpEmpId = document.getElementById("wpEmpId");
-const wpAbout = document.getElementById("wpAbout");
-const wpNotes = document.getElementById("wpNotes");
-
-// Block selection buttons (A–D)
-let selectedBlock = localStorage.getItem("warden_block") || "";
-const blockButtons = document.querySelectorAll(".block-btn");
-
-// ================= Prefill Stored Data =================
-function prefillWardenProfile() {
-  wpFullName.value = localStorage.getItem("warden_name") || "";
-  wpEmail.value = localStorage.getItem("warden_email") || "";
-  wpPhone.value = localStorage.getItem("warden_phone") || "";
-  wpEmpId.value = localStorage.getItem("warden_empid") || "";
-  wpAbout.value = localStorage.getItem("warden_about") || "";
-  wpNotes.value = localStorage.getItem("warden_notes") || "";
-
-  // Stored block selection
-  selectedBlock = localStorage.getItem("warden_block") || "";
-  blockButtons.forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.block === selectedBlock);
-  });
-
-  // Left panel info
-  wpNameLeft.textContent = wpFullName.value || "Warden";
-  wpMiniMeta.textContent = selectedBlock ? `Block: ${selectedBlock}` : "Block: -";
-}
-
-// ================= Modal Open / Close =================
-function openWardenProfile() {
-  prefillWardenProfile();
+const wpModal = $("wardenProfileModal");
+$("profileBtn")?.addEventListener("click", () => {
+  $("wpFullName").value = localStorage.getItem("warden_name") || "";
+  $("wpEmail").value = localStorage.getItem("warden_email") || "";
+  $("wpPhone").value = localStorage.getItem("warden_phone") || "";
   wpModal.classList.add("open");
-  document.body.classList.add("modal-open");
-}
-
-function closeWardenProfile() {
-  wpModal.classList.remove("open");
-  document.body.classList.remove("modal-open");
-}
-
-wpClose.addEventListener("click", closeWardenProfile);
-
-wpModal.addEventListener("click", e => {
-  if (e.target === wpModal) closeWardenProfile();
 });
+$("wpClose")?.addEventListener("click", () => wpModal.classList.remove("open"));
 
-// Topbar profile icon → open modal
-document.getElementById("profileBtn").addEventListener("click", openWardenProfile);
-
-// ================= Block Selection Buttons =================
-blockButtons.forEach(btn => {
-  btn.addEventListener("click", () => {
-    selectedBlock = btn.dataset.block;
-    blockButtons.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    // Update left panel instantly
-    wpMiniMeta.textContent = `Block: ${selectedBlock}`;
-  });
-});
-
-// ================= Photo Upload =================
-wpChangePhoto.addEventListener("click", () => wpPhotoInput.click());
-
-wpPhotoInput.addEventListener("change", () => {
-  const file = wpPhotoInput.files[0];
-  if (!file) return;
-
-  const url = URL.createObjectURL(file);
-  wpPhoto.src = url;
-  wpPhoto.style.display = "block";
-  wpPhotoFallback.style.display = "none";
-});
-
-// ================= Scoped Tab Switching =================
-const wpTabButtons = wpModal.querySelectorAll(".tab-btn");
-const wpTabPanels = wpModal.querySelectorAll(".tab-panel");
-
-wpTabButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const tab = btn.dataset.tab;
-
-    // activate button
-    wpTabButtons.forEach((b) =>
-      b.classList.toggle("active", b === btn)
-    );
-
-    // activate panel
-    wpTabPanels.forEach((p) =>
-      p.classList.toggle("active", p.id === `tab-${tab}`)
-    );
-  });
-});
-
-// ================= Save Profile (LOCAL ONLY) =================
-wpForm.addEventListener("submit", (e) => {
+$("wpForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
-
-  localStorage.setItem("warden_name", wpFullName.value.trim());
-  localStorage.setItem("warden_email", wpEmail.value.trim());
-  localStorage.setItem("warden_phone", wpPhone.value.trim());
-  localStorage.setItem("warden_empid", wpEmpId.value.trim());
-  localStorage.setItem("warden_about", wpAbout.value.trim());
-  localStorage.setItem("warden_notes", wpNotes.value.trim());
-  localStorage.setItem("warden_block", selectedBlock);
-
-  alert("Profile updated.");
-  closeWardenProfile();
+  try {
+    const res = await fetch(`${API_URL}/users/${currentUserId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ mobile: $("wpPhone").value }),
+    });
+    if (res.ok) {
+      alert("Updated");
+      wpModal.classList.remove("open");
+      loadProfile();
+    }
+  } catch (e) {}
 });
 
-/* ================= end Warden Profile Modal ================= */
+function getPriorityBadge(priority) {
+  // Handle case sensitivity (High/high)
+  const p = (priority || "Medium").toLowerCase();
 
+  if (p === "high") {
+    return `<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:bold;">🔥 HIGH</span>`;
+  }
+  if (p === "medium") {
+    return `<span style="background:#f1c40f; color:black; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:bold;">⚠️ MEDIUM</span>`;
+  }
+  return `<span style="background:#2ecc71; color:white; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:bold;">🟢 LOW</span>`;
+}

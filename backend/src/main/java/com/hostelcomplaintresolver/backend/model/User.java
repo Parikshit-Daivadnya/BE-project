@@ -16,6 +16,20 @@ public class User {
     @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
 
+    // ✅ NEW FIELD: Profile Picture Path
+    @Column(length = 500)
+    private String profilePhoto;
+
+    // ✅ NEW FIELD: Registration ID Proof Path
+    @Column(length = 500)
+    private String idProof;
+
+    public String getProfilePhoto() { return profilePhoto; }
+    public void setProfilePhoto(String profilePhoto) { this.profilePhoto = profilePhoto; }
+
+    public String getIdProof() { return idProof; }
+    public void setIdProof(String idProof) { this.idProof = idProof; }
+
     @Column(nullable = false)
     private String name;
 
@@ -33,7 +47,8 @@ public class User {
     @Column(name = "mobile")
     private String mobile;
 
-    @Column(name = "permanent_address", length = 500)
+
+    @Column(name = "permanent_address", length = 1000)
     private String permanentAddress;
 
     // --- Student Fields ---

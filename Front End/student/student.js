@@ -1,172 +1,195 @@
 /* ===========================================================
-   Student Dashboard (Integrated)
+   Student Dashboard (Fully Integrated & Fixed)
    =========================================================== */
 
 const API_URL = "http://localhost:8080/api";
 const token = localStorage.getItem("jwt_token");
 
-// GATEKEEPER: Redirect if not logged in
+// --- HELPER: Decode Token ---
+function parseJwt(token) {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
 if (!token) {
   alert("Please login first.");
   window.location.href = "../auth/index.html";
 }
 
-// === BASIC DASHBOARD SETUP ===
-const name = localStorage.getItem("student_name") || "Student";
-document.getElementById("studentName").textContent = name;
-document.getElementById("year").textContent = new Date().getFullYear();
+const userPayload = parseJwt(token);
+const currentUserId = userPayload ? userPayload.sub : null;
 
-// Notices (Static for now as backend doesn't have Notice Controller)
-const notices = [
-  {
-    date: "11/11/2025",
-    title: "Water supply maintenance",
-    by: "Warden • Block B",
-    desc: "Water off 2–4 PM.",
-  },
-  {
-    date: "10/11/2025",
-    title: "Common room cleaning",
-    by: "Warden • Block A",
-    desc: "Clear personal items.",
-  },
-  {
-    date: "09/11/2025",
-    title: "Gym cleaning",
-    by: "Warden • Block D",
-    desc: "Clear personal items.",
-  },
-];
+// Global State
+let myComplaintsData = [];
+let notices = [];
+let resaleItems = [];
+let currentUserData = {};
 
+/* ===================================================
+   1. INITIAL DATA FETCH
+   =================================================== */
+async function initDashboard() {
+  await Promise.all([
+    loadProfile(),
+    loadComplaints(),
+    loadNotices(),
+    loadResaleItems(),
+  ]);
 
-
-/* new changes for Bell icon notices */
-/* ================= Notifications System ================= */
-
-/* let notifications = [
-  // Hard-coded starting notification (example)
-  { message: "Welcome to DHCRC Dashboard!", type: "info", time: "Just now", read: false }
-];
-
-// Universal notification generator (backend ready)
-function addNotification(message) {
-  notifications.unshift({
-    message,
-    time: new Date().toLocaleString(),
-    read: false
-  });
-  updateNotificationBadge();
+  // Render UI after data loads
+  updateKPIs();
+  renderRecentActivity();
+  renderNotices();
 }
 
-/* Event-based notification helpers */
+async function loadProfile() {
+  try {
+    const res = await fetch(`${API_URL}/users/${currentUserId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      currentUserData = await res.json();
+      document.getElementById("studentName").textContent = currentUserData.name;
+      document.getElementById("year").textContent = new Date().getFullYear();
 
-/*function notifyComplaintLodged(id) {
-  addNotification(`Complaint ${id} lodged successfully.`);
+      // Load Profile Photo if exists
+      if (currentUserData.profilePhoto) {
+        const photoUrl = `http://localhost:8080${currentUserData.profilePhoto}`;
+        const pfPhoto = document.getElementById("pfPhoto");
+        if (pfPhoto) {
+          pfPhoto.src = photoUrl;
+          pfPhoto.style.display = "block";
+          document.getElementById("pfPhotoFallback").style.display = "none";
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Profile Error", e);
+  }
 }
 
-function notifyComplaintResolved(id) {
-  addNotification(`Your complaint ${id} has been resolved.`);
-}
-
-function notifyFeedbackRequired(id) {
-  addNotification(`Please give feedback for complaint ${id}.`);
-}
-
-function notifyResalePosted(name) {
-  addNotification(`Resale item '${name}' posted successfully.`);
-}
-
-function notifyResaleSold(name) {
-  addNotification(`Your resale item '${name}' was marked sold.`);
-}
-
-function notifyNewNotice(title) {
-  addNotification(`New notice posted: ${title}`);
-} *
-
-/* new changes for Bell icon notices end */
-/* ================= Notifications System end ================= */
-
-
-
-const noticeList = document.getElementById("noticeList");
-if (noticeList) {
-  // Latest 3 notices 
-  // New Changes 
-const latest = notices.slice(0, 3);
-
-noticeList.innerHTML = latest
-  .map(
-    (n) => `
-      <li class="notice">
-        <span class="date">${n.date}</span>
-        <div>
-          <p class="title">${n.title}</p>
-          <p class="meta">${n.by} — ${n.desc}</p>
-        </div>
-      </li>
-    `
-  )
-  .join("");
-
-}
-
-// === FETCH DATA & UPDATE KPIs ===
-async function refreshDashboard() {
+async function loadComplaints() {
   try {
     const res = await fetch(`${API_URL}/complaints/my-complaints`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const myComplaints = await res.json();
-
-    // Update KPIs
-    const pending = myComplaints.filter(
-      (c) => c.status === "RAISED" || c.status === "IN_PROGRESS"
-    ).length;
-    const resolved = myComplaints.filter(
-      (c) => c.status === "RESOLVED" || c.status === "CLOSED"
-    ).length;
-
-    document.getElementById("kpiPending").textContent = pending;
-    document.getElementById("kpiResolved").textContent = resolved;
-
-    // Update Recent Activity (Last 3 complaints)
-    const activityList = document.getElementById("activityList");
-    if (activityList) {
-      activityList.innerHTML = myComplaints
-        .slice(-3)
-        .reverse()
-        .map(
-          (c) =>
-            `<li><span>Raised: ${c.category} - ${c.description.substring(
-              0,
-              20
-            )}...</span><span>${c.status}</span></li>`
-        )
-        .join("");
+    if (res.ok) {
+      myComplaintsData = await res.json();
     }
-
-    // Store for modal use
-    window.myComplaintsData = myComplaints;
-  } catch (error) {
-    console.error("Error fetching data:", error);
+  } catch (e) {
+    console.error("Complaints Error", e);
   }
 }
-refreshDashboard(); // Run on load
 
-// === BUTTONS ===
+async function loadNotices() {
+  try {
+    const res = await fetch(`${API_URL}/notices`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) notices = await res.json();
+  } catch (e) {
+    console.error("Notices Error", e);
+  }
+}
+
+async function loadResaleItems() {
+  try {
+    const res = await fetch(`${API_URL}/resale`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      resaleItems = await res.json();
+      renderResale(); // Update grid if open
+    }
+  } catch (e) {
+    console.error("Resale Error", e);
+  }
+}
+
+initDashboard();
+
+/* ===================================================
+   2. DASHBOARD RENDERING
+   =================================================== */
+function updateKPIs() {
+  const pending = myComplaintsData.filter((c) =>
+    ["RAISED", "IN_PROGRESS"].includes(c.status)
+  ).length;
+  const resolved = myComplaintsData.filter((c) =>
+    ["RESOLVED", "CLOSED"].includes(c.status)
+  ).length;
+  document.getElementById("kpiPending").textContent = pending;
+  document.getElementById("kpiResolved").textContent = resolved;
+  document.getElementById("kpiResale").textContent = resaleItems.filter(
+    (i) => !i.sold
+  ).length;
+}
+
+function renderRecentActivity() {
+  const list = document.getElementById("activityList");
+  if (!list) return;
+  list.innerHTML = myComplaintsData
+    .slice(-3)
+    .reverse()
+    .map(
+      (c) => `
+        <li>
+            <span>Raised: ${c.category} - ${c.description.substring(
+        0,
+        20
+      )}...</span>
+            <span style="font-weight:bold; color:var(--blue)">${c.status}</span>
+        </li>
+    `
+    )
+    .join("");
+}
+
+function renderNotices() {
+  const list = document.getElementById("noticeList");
+  if (!list) return;
+  list.innerHTML = notices
+    .slice(0, 3)
+    .map(
+      (n) => `
+        <li class="notice">
+            <span class="date">${new Date(n.date).toLocaleDateString()}</span>
+            <div>
+                <p class="title">${n.title}</p>
+                <p class="meta">${
+                  n.postedBy || "Warden"
+                } — ${n.description.substring(0, 40)}...</p>
+            </div>
+        </li>
+    `
+    )
+    .join("");
+}
+
+/* ===================================================
+   3. NAVIGATION & MODALS
+   =================================================== */
 document.getElementById("logoutBtn").addEventListener("click", () => {
   localStorage.removeItem("jwt_token");
   window.location.href = "../auth/index.html";
 });
 
-// Profile Button
-// Profile icon on topbar → open profile modal (new changes)
-document.getElementById("profileBtn").addEventListener("click", openProfileModal);
+document
+  .getElementById("profileBtn")
+  .addEventListener("click", openProfileModal);
 
-
-
-// Quick Links
 document.querySelectorAll(".ql-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = btn.dataset.open;
@@ -177,7 +200,9 @@ document.querySelectorAll(".ql-btn").forEach((btn) => {
   });
 });
 
-// ======================= LODGE COMPLAINT MODAL =======================
+/* ===================================================
+   4. COMPLAINT LOGIC (Lodge)
+   =================================================== */
 const lcModal = document.getElementById("complaintModal");
 const lcForm = document.getElementById("lcForm");
 
@@ -193,19 +218,17 @@ document
   .getElementById("lcClose")
   ?.addEventListener("click", closeComplaintModal);
 
-// HANDLE SUBMIT (REAL API CALL)
 lcForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const payload = {
     category: document.getElementById("lcType").value,
     description: document.getElementById("lcDesc").value,
-    // Note: Room Number comes from User profile in backend, but if your DTO needs it:
-    // roomNumber: "From Profile"
+    timeSlot: document.getElementById("lcSlot").value,
   };
 
   try {
-    const response = await fetch(`${API_URL}/complaints`, {
+    const res = await fetch(`${API_URL}/complaints`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -213,15 +236,14 @@ lcForm.addEventListener("submit", async (e) => {
       },
       body: JSON.stringify(payload),
     });
-
-    if (response.ok) {
+    if (res.ok) {
       alert("Complaint Raised Successfully!");
       lcForm.reset();
       closeComplaintModal();
-      refreshDashboard(); // Refresh UI
+      loadComplaints();
+      updateKPIs();
     } else {
-      const err = await response.text();
-      alert("Failed: " + err);
+      alert("Failed: " + (await res.text()));
     }
   } catch (error) {
     console.error(error);
@@ -229,7 +251,7 @@ lcForm.addEventListener("submit", async (e) => {
   }
 });
 
-// ======================= MY COMPLAINTS MODAL =======================
+// My Complaints Modal
 const mcModal = document.getElementById("complaintsModal");
 const mcBody = document.getElementById("complaintsBody");
 const mcFilter = document.getElementById("mcFilter");
@@ -237,7 +259,7 @@ const mcFilter = document.getElementById("mcFilter");
 function openComplaintsModal() {
   mcModal.classList.add("open");
   document.body.classList.add("modal-open");
-  renderComplaints(mcFilter.value || "all");
+  renderComplaintsTable(mcFilter.value || "all");
 }
 function closeComplaintsModal() {
   mcModal.classList.remove("open");
@@ -247,481 +269,427 @@ document
   .getElementById("mcClose")
   ?.addEventListener("click", closeComplaintsModal);
 
-function renderComplaints(filter = "all") {
-  const list = window.myComplaintsData || [];
-
-  // Mapping backend status to filter keys
-  const filtered = list.filter((c) => {
+/* ===================================================
+   Render Table
+   =================================================== */
+function renderComplaintsTable(filter = "all") {
+  const filtered = myComplaintsData.filter((c) => {
     if (filter === "all") return true;
     if (filter === "pending") return c.status === "RAISED";
-    if (filter === "progress") return c.status === "IN_PROGRESS";
-    if (filter === "resolved")
-      return c.status === "RESOLVED" || c.status === "CLOSED";
+    if (filter === "progress")
+      return c.status === "IN_PROGRESS" || c.status === "ESCALATED";
+    if (filter === "resolved") return ["RESOLVED", "CLOSED"].includes(c.status);
     return true;
   });
 
   mcBody.innerHTML = filtered
-    .map(
-      (c) => `
-    <tr>
-      <td>${c.id}</td>
-      <td>${c.category}</td>
-      <td>${c.description}</td>
-      <td>${new Date(c.createdAt).toLocaleDateString()}</td>
-      <td>-</td>
-      <td><span class="status-chip status-${c.status.toLowerCase()}">${
-        c.status
-      }</span></td>
-      <td>
-        ${
-          c.status === "RESOLVED"
-            ? `<button class="action-btn" onclick="submitFeedback('${c.id}')">Submit Feedback</button>`
-            : `<button class="action-btn" onclick="verifyChain('${c.id}')">Verify</button>`
-        }
-      </td>
-    </tr>
-  `
-    )
+    .map((c) => {
+      let actionButtons = "";
+
+      if (c.status === "RESOLVED") {
+        actionButtons = `
+          <div style="display:flex; gap:5px;">
+            <button class="action-btn" onclick="openFeedbackModal('${c.id}')">Feedback</button>
+            <button class="action-btn" style="background-color:#dc3545; color:white;" onclick="openEscalateModal('${c.id}')">Not Solved</button>
+          </div>
+        `;
+      } else if (c.status === "ESCALATED") {
+        actionButtons = `<span style="color:red; font-weight:bold;">Escalated</span>`;
+      } else if (c.status === "CLOSED") {
+        actionButtons = `<span style="color:green;">Closed</span>`;
+      } else {
+        actionButtons = `<button class="action-btn" onclick="verifyChain('${c.id}')">Verify</button>`;
+      }
+
+      return `
+        <tr>
+            <td>${c.id}</td>
+            <td>${c.category}</td>
+            <td>${c.description}</td>
+            <td>${new Date(c.createdAt).toLocaleDateString()}</td>
+            <td style="color:var(--blue); font-weight:500;">${
+              c.timeSlot || "Any Time"
+            }</td>
+            <td><span class="status-chip status-${c.status
+              .toLowerCase()
+              .replace("_", "")}">${c.status}</span></td>
+            <td>${actionButtons}</td>
+        </tr>
+    `;
+    })
     .join("");
 }
+mcFilter.addEventListener("change", () =>
+  renderComplaintsTable(mcFilter.value)
+);
 
-// Filter Change
-mcFilter.addEventListener("change", () => renderComplaints(mcFilter.value));
-
-// Verify Blockchain Function
 window.verifyChain = async (id) => {
   try {
     const res = await fetch(`${API_URL}/blockchain/verify/${id}`);
-    const msg = await res.text();
-    alert(msg);
+    alert(await res.text());
   } catch (e) {
     alert("Verification failed");
   }
 };
 
-// Submit Feedback Function
-window.submitFeedback = async (id) => {
-  const rating = prompt("Rate 1-5:");
-  const feedback = prompt("Comments:");
-  if (!rating) return;
+/* ===================================================
+   5. FEEDBACK LOGIC
+   =================================================== */
+const fbModal = document.getElementById("feedbackModal");
+const fbForm = document.getElementById("fbForm");
+const fbClose = document.getElementById("fbClose");
+const fbCancel = document.getElementById("fbCancel");
+const fbComplaintId = document.getElementById("fbComplaintId");
+
+window.openFeedbackModal = (id) => {
+  fbComplaintId.value = id;
+  fbForm.reset();
+  fbModal.classList.add("open");
+  document.body.classList.add("modal-open");
+};
+
+function closeFeedbackModal() {
+  fbModal.classList.remove("open");
+  document.body.classList.remove("modal-open");
+}
+fbClose?.addEventListener("click", closeFeedbackModal);
+fbCancel?.addEventListener("click", closeFeedbackModal);
+
+fbForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = fbComplaintId.value;
+  const rating = document.querySelector('input[name="rating"]:checked')?.value;
+  const comment = document.getElementById("fbComment").value;
+  const file = document.getElementById("fbProof").files[0];
+
+  if (!rating || !file) {
+    alert("Please provide a rating and upload a photo proof.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("rating", rating);
+  formData.append("feedback", comment);
+  formData.append("proof", file);
 
   try {
     const res = await fetch(`${API_URL}/complaints/${id}/feedback`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ rating: parseInt(rating), feedback: feedback }),
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
     });
+
     if (res.ok) {
-      alert("Feedback Submitted. Complaint Closed.");
-      refreshDashboard();
-      closeComplaintsModal();
+      alert("Feedback Submitted & Complaint Closed!");
+      closeFeedbackModal();
+      loadComplaints();
+      updateKPIs();
+    } else {
+      alert("Failed: " + (await res.text()));
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Server Error");
+  }
+});
+
+/* ===================================================
+   6. ESCALATION LOGIC
+   =================================================== */
+const escModal = document.getElementById("escalateModal");
+const escForm = document.getElementById("escForm");
+const escClose = document.getElementById("escClose");
+const escCancel = document.getElementById("escCancel");
+const escComplaintId = document.getElementById("escComplaintId");
+
+window.openEscalateModal = (id) => {
+  escComplaintId.value = id;
+  escForm.reset();
+  escModal.classList.add("open");
+  document.body.classList.add("modal-open");
+};
+
+function closeEscalateModal() {
+  escModal.classList.remove("open");
+  document.body.classList.remove("modal-open");
+}
+escClose?.addEventListener("click", closeEscalateModal);
+escCancel?.addEventListener("click", closeEscalateModal);
+
+escForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = escComplaintId.value;
+  const reason = document.getElementById("escReason").value;
+  const file = document.getElementById("escProof").files[0];
+
+  if (!file) {
+    alert("Proof image is required to escalate.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("reason", reason);
+  formData.append("proof", file);
+
+  try {
+    const res = await fetch(`${API_URL}/complaints/${id}/reopen`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (res.ok) {
+      alert("Complaint Escalated to Warden!");
+      closeEscalateModal();
+      loadComplaints();
+      updateKPIs();
+    } else {
+      alert("Failed: " + (await res.text()));
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Server Error");
+  }
+});
+
+/* ===================================================
+   7. RESALE MARKET (Restored & Fixed)
+   =================================================== */
+const resaleModal = document.getElementById("resaleModal");
+const rsClose = document.getElementById("rsClose");
+const rsGrid = document.getElementById("rsGrid");
+const postItemModal = document.getElementById("postItemModal");
+const piForm = document.getElementById("piForm");
+
+// ✅ RESTORED: Functions to Open/Close Modal
+function openResaleModal() {
+  if (resaleModal) {
+    resaleModal.classList.add("open");
+    document.body.classList.add("modal-open");
+    renderResale();
+  }
+}
+function closeResaleModal() {
+  if (resaleModal) {
+    resaleModal.classList.remove("open");
+    document.body.classList.remove("modal-open");
+  }
+}
+if (rsClose) rsClose.addEventListener("click", closeResaleModal);
+
+// ✅ RESTORED: Render Logic
+function renderResale() {
+  const q = document.getElementById("rsSearch").value.toLowerCase();
+  const cat = document.getElementById("rsCategory").value;
+
+  let list = resaleItems.filter((it) => !it.sold);
+  if (cat !== "all") list = list.filter((it) => it.category === cat);
+  if (q) list = list.filter((it) => it.name.toLowerCase().includes(q));
+
+  if (rsGrid) {
+    rsGrid.innerHTML = list
+      .map(
+        (it) => `
+            <div class="rs-card">
+                <div class="rs-thumb">
+                    ${
+                      it.imageUrl
+                        ? `<img src="http://localhost:8080${it.imageUrl}" alt="Item" style="width:100%;height:100%;object-fit:cover;">`
+                        : "🪙"
+                    }
+                </div>
+                <h4 class="rs-title">${it.name}</h4>
+                <p class="rs-price">₹ ${it.price}</p>
+                <p class="rs-meta">Posted by ${
+                  it.ownerName || "Student"
+                } • ${new Date(it.postedDate).toLocaleDateString()}</p>
+                <div class="rs-actions"><button class="rs-view">Details</button></div>
+            </div>
+        `
+      )
+      .join("");
+  }
+}
+
+// Search Listeners
+document.getElementById("rsSearch").addEventListener("input", renderResale);
+document.getElementById("rsCategory").addEventListener("change", renderResale);
+
+// Open "Post Item" Modal
+document.getElementById("rsPostBtn").addEventListener("click", () => {
+  postItemModal.classList.add("open");
+  document.body.classList.add("modal-open");
+});
+document.getElementById("piClose").addEventListener("click", () => {
+  postItemModal.classList.remove("open");
+  document.body.classList.remove("modal-open");
+});
+
+// ✅ FIXED: Post Item Submission (Using FormData)
+piForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData();
+  formData.append("name", document.getElementById("piName").value);
+  formData.append("price", document.getElementById("piPrice").value);
+  formData.append("category", document.getElementById("piCategory").value);
+  formData.append("description", document.getElementById("piDesc").value);
+  formData.append("ownerName", currentUserData.name);
+
+  // Mandatory Image
+  const imageInput = document.getElementById("piImage");
+  if (imageInput && imageInput.files[0]) {
+    formData.append("image", imageInput.files[0]);
+  } else {
+    alert("Please upload an image for the item.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/resale`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`, // NO Content-Type!
+      },
+      body: formData,
+    });
+
+    if (res.ok) {
+      alert("Item Posted!");
+      piForm.reset();
+      postItemModal.classList.remove("open");
+      document.body.classList.remove("modal-open");
+      loadResaleItems();
+    } else {
+      const txt = await res.text();
+      alert("Failed: " + txt);
     }
   } catch (e) {
     console.error(e);
   }
-};
-
-
-/* ======================= RESALE ITEMS (DEMO) ======================= */
-//New Changes
-const resaleModal = document.getElementById("resaleModal");
-const rsClose = document.getElementById("rsClose");
-const rsSearch = document.getElementById("rsSearch");
-const rsCategory = document.getElementById("rsCategory");
-const rsSort = document.getElementById("rsSort");
-const rsGrid = document.getElementById("rsGrid");
-
-// Details modal refs
-const rsDetailsModal = document.getElementById("rsDetailsModal");
-const rsDetClose = document.getElementById("rsDetClose");
-const rsDetCloseBtn = document.getElementById("rsDetCloseBtn");
-const rsDetImg = document.getElementById("rsDetImg");
-const rsDetName = document.getElementById("rsDetName");
-const rsDetPrice = document.getElementById("rsDetPrice");
-const rsDetOwner = document.getElementById("rsDetOwner");
-const rsDetDesc = document.getElementById("rsDetDesc");
-const rsMarkSold = document.getElementById("rsMarkSold");
-
-// Post Item modal refs
-const postItemModal = document.getElementById("postItemModal");
-const rsPostBtn = document.getElementById("rsPostBtn");
-const piClose = document.getElementById("piClose");
-const piForm = document.getElementById("piForm");
-const piReset = document.getElementById("piReset");
-
-// Demo Resale Items
-let resaleItems = [
-  { id:"RS-001", name:"Study Table", price:1200, owner:"Amit (B-203)", category:"furniture", date:"2025-11-10", img:"", desc:"Solid wood, good condition.", sold:false },
-  { id:"RS-002", name:"Router TP-Link", price:800, owner:"Neha (A-108)", category:"electronics", date:"2025-11-09", img:"", desc:"Dual band router, works fine.", sold:false },
-  { id:"RS-003", name:"DSA Book", price:250, owner:"Karan (C-310)", category:"books", date:"2025-11-08", img:"", desc:"Clean copy, few highlights.", sold:false },
-  { id:"RS-004", name:"Chair", price:400, owner:"Priya (B-401)", category:"furniture", date:"2025-11-07", img:"", desc:"Plastic chair, barely used.", sold:false },
-];
-
-// Open / Close resale modal
-function openResaleModal(){
-  resaleModal.classList.add("open");
-  document.body.classList.add("modal-open");
-  renderResale();
-}
-function closeResaleModal(){
-  resaleModal.classList.remove("open");
-  document.body.classList.remove("modal-open");
-}
-rsClose.addEventListener("click", closeResaleModal);
-resaleModal.addEventListener("click", e => { if (e.target === resaleModal) closeResaleModal(); });
-
-// Render resale grid
-function renderResale(){
-  const q = rsSearch.value.trim().toLowerCase();
-  const cat = rsCategory.value;
-  const sort = rsSort.value;
-
-  let list = resaleItems.filter(it => !it.sold);
-  if (cat !== "all") list = list.filter(it => it.category === cat);
-  if (q) list = list.filter(it => it.name.toLowerCase().includes(q));
-
-  list.sort((a,b) => {
-    if (sort === "priceAsc") return a.price - b.price;
-    if (sort === "priceDesc") return b.price - a.price;
-    if (sort === "old") return new Date(a.date) - new Date(b.date);
-    return new Date(b.date) - new Date(a.date); // newest
-  });
-
-  rsGrid.innerHTML = list.map(it => `
-    <div class="rs-card">
-      <div class="rs-thumb">${it.img ? `<img src="${it.img}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:12px">` : "🖼️"}</div>
-      <h4 class="rs-title">${it.name}</h4>
-      <p class="rs-price">₹ ${it.price}</p>
-      <p class="rs-meta">Posted by ${it.owner} • ${formatDate(it.date)}</p>
-      <div class="rs-actions">
-        <button class="rs-view" data-id="${it.id}">View Details</button>
-      </div>
-    </div>
-  `).join("");
-
-  // Attach view handlers
-  rsGrid.querySelectorAll(".rs-view").forEach(btn => {
-    btn.addEventListener("click", () => openResaleDetails(btn.dataset.id));
-  });
-
-  // Update Resale KPI
-  const resaleCount = resaleItems.filter(it => !it.sold).length;
-  const kpi = document.getElementById("kpiResale");
-  if (kpi) kpi.textContent = resaleCount;
-}
-
-function formatDate(iso){
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-}
-
-rsSearch.addEventListener("input", renderResale);
-rsCategory.addEventListener("change", renderResale);
-rsSort.addEventListener("change", renderResale);
-
-// Details Modal
-function openResaleDetails(id){
-  const it = resaleItems.find(x => x.id === id);
-  if(!it) return;
-  rsDetImg.src = it.img || "";
-  rsDetImg.style.display = it.img ? "block" : "none";
-  rsDetName.textContent = it.name;
-  rsDetPrice.textContent = "₹ " + it.price;
-  rsDetOwner.textContent = `Seller: ${it.owner} • Posted ${formatDate(it.date)}`;
-  rsDetDesc.textContent = it.desc || "—";
-
-  rsMarkSold.onclick = () => {
-    it.sold = true;
-    alert(`Marked ${it.name} as sold (demo).`);
-    closeResaleDetails();
-    renderResale();
-  };
-
-  rsDetailsModal.classList.add("open");
-  document.body.classList.add("modal-open");
-}
-
-function closeResaleDetails(){
-  rsDetailsModal.classList.remove("open");
-  document.body.classList.remove("modal-open");
-}
-rsDetClose.addEventListener("click", closeResaleDetails);
-rsDetCloseBtn.addEventListener("click", closeResaleDetails);
-rsDetailsModal.addEventListener("click", e => { if (e.target === rsDetailsModal) closeResaleDetails(); });
-
-// Post Item modal
-rsPostBtn.addEventListener("click", () => {
-  postItemModal.classList.add("open");
-  document.body.classList.add("modal-open");
-  document.getElementById("piName").focus();
 });
 
-function closePostItem(){
-  postItemModal.classList.remove("open");
-  document.body.classList.remove("modal-open");
-}
-piClose.addEventListener("click", closePostItem);
-postItemModal.addEventListener("click", e => { if (e.target === postItemModal) closePostItem(); });
-piReset.addEventListener("click", () => piForm.reset());
-
-piForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = document.getElementById("piName").value.trim();
-  const price = parseInt(document.getElementById("piPrice").value, 10);
-  const category = document.getElementById("piCategory").value;
-  const desc = document.getElementById("piDesc").value.trim();
-  const file = document.getElementById("piImg").files[0];
-
-  const newItem = {
-    id: "RS-" + String(Math.floor(Math.random()*900)+100),
-    name, price, category, desc,
-    owner: localStorage.getItem("student_name") || "You",
-    date: new Date().toISOString().slice(0,10),
-    img: file ? URL.createObjectURL(file) : "",
-    sold:false
-  };
-
-  resaleItems.unshift(newItem);
-  alert("Item posted (demo).");
-  piForm.reset();
-  closePostItem();
-  renderResale();
-});
-
-// ======================= Resale Items Modal end ===========================
-
-
-/* =================== All Notices Modal =================== */
-// New Changes
-
+/* ===================================================
+   8. ALL NOTICES MODAL
+   =================================================== */
 const noticesModal = document.getElementById("noticesModal");
-const ntClose = document.getElementById("ntClose");
-const allNoticesBody = document.getElementById("allNoticesBody");
-
-// When user clicks "View all notices"
 document.getElementById("viewAllNotices").addEventListener("click", () => {
-  renderAllNotices();
-  noticesModal.classList.add("open");
-  document.body.classList.add("modal-open");
-});
-
-// Close modal
-function closeNoticesModal() {
-  noticesModal.classList.remove("open");
-  document.body.classList.remove("modal-open");
-}
-
-ntClose.addEventListener("click", closeNoticesModal);
-
-noticesModal.addEventListener("click", (e) => {
-  if (e.target === noticesModal) closeNoticesModal();
-});
-
-// Fill all notices inside modal
-function renderAllNotices() {
-  allNoticesBody.innerHTML = notices
+  document.getElementById("allNoticesBody").innerHTML = notices
     .map(
       (n) => `
         <div class="notice-full-card">
-          <div class="nt-title">${n.title}</div>
-          <div class="nt-meta">${n.date} • ${n.by}</div>
-          <div class="nt-desc">${n.desc}</div>
+            <div class="nt-title">${n.title}</div>
+            <div class="nt-meta">${new Date(n.date).toLocaleDateString()} • ${
+        n.postedBy || "Warden"
+      }</div>
+            <div class="nt-desc">${n.description}</div>
         </div>
-      `
+    `
     )
     .join("");
-}
-/* =================== All Notices Modal end =================== */
-
-
-
-
-
-
-
-// Bell Icon Notifications new changes
-/* =================== Notifications Modal =================== */
-
-/* const notificationsModal = document.getElementById("notificationsModal");
-const ntfClose = document.getElementById("ntfClose");
-const notificationsList = document.getElementById("notificationsList");
-const notifBell = document.getElementById("notifBell");
-
-// Bell click → open modal
-notifBell.addEventListener("click", () => {
-  renderNotifications();
-  notificationsModal.classList.add("open");
+  noticesModal.classList.add("open");
   document.body.classList.add("modal-open");
-
-  // mark all as read
-  notifications.forEach(n => (n.read = true));
-  updateNotificationBadge();
 });
-
-// Close modal
-ntfClose.addEventListener("click", () => {
-  notificationsModal.classList.remove("open");
+document.getElementById("ntClose").addEventListener("click", () => {
+  noticesModal.classList.remove("open");
   document.body.classList.remove("modal-open");
 });
 
-notificationsModal.addEventListener("click", (e) => {
-  if (e.target === notificationsModal) {
-    notificationsModal.classList.remove("open");
-    document.body.classList.remove("modal-open");
-  }
-});
-
-// Render notification list in modal
-function renderNotifications() {
-  if (notifications.length === 0) {
-    notificationsList.innerHTML = `<p>No notifications</p>`;
-    return;
-  }
-
-  notificationsList.innerHTML = notifications
-    .map(
-      (n) => `
-        <div class="notification-card">
-          <p>${n.message}</p>
-          <p class="ntf-time">${n.time}</p>
-        </div>
-      `
-    )
-    .join("");
-}
-
-// unread badge counter
-function updateNotificationBadge() {
-  const badge = document.getElementById("notifBadge");
-  const unread = notifications.filter((n) => !n.read).length;
-
-  if (unread > 0) {
-    badge.textContent = unread;
-    badge.style.display = "block";
-  } else {
-    badge.style.display = "none";
-  }
-} /*
-
-updateNotificationBadge();
-// Bell Icon Notifications new changes ends
-/* =================== Notifications Modal end =================== */ 
-
-
-
-
-
-// ======================= Profile Modal ===========================
+/* ===================================================
+   9. PROFILE MODAL
+   =================================================== */
 const profileModal = document.getElementById("profileModal");
-const pfClose = document.getElementById("pfClose");
 const pfForm = document.getElementById("pfForm");
-
-// left panel elements
-const pfNameLeft = document.getElementById("pfNameLeft");
-const pfPhoto = document.getElementById("pfPhoto");
-const pfPhotoFallback = document.getElementById("pfPhotoFallback");
 const pfPhotoInput = document.getElementById("pfPhotoInput");
-const pfChangePhoto = document.getElementById("pfChangePhoto");
-const pfMiniMeta = document.getElementById("pfMiniMeta");
-
-// form fields
-const pfFullName = document.getElementById("pfFullName");
-const pfEmail = document.getElementById("pfEmail");
-const pfPhone = document.getElementById("pfPhone");
-const pfAddress = document.getElementById("pfAddress");
-const pfEmergName = document.getElementById("pfEmergName");
-const pfEmergPhone = document.getElementById("pfEmergPhone");
-const pfBlood = document.getElementById("pfBlood");
-const pfMedical = document.getElementById("pfMedical");
-const pfRoll = document.getElementById("pfRoll");
-const pfCourseYear = document.getElementById("pfCourseYear");
-const pfVehicle = document.getElementById("pfVehicle");
-const pfHobbies = document.getElementById("pfHobbies");
-const pfFood = document.getElementById("pfFood");
-const pfAbout = document.getElementById("pfAbout");
-
-// tabs
-const tabButtons = document.querySelectorAll(".tab-btn");
-const tabPanels = document.querySelectorAll(".tab-panel");
-
-// demo prefill (later: fetch from API)
-function prefillProfile() {
-  const nm = localStorage.getItem("student_name") || "Student Name";
-  pfNameLeft.textContent = nm;
-  pfFullName.value = nm;
-
-  pfEmail.value = localStorage.getItem("student_email") || "name@iiitpune.edu";
-  pfRoll.value = localStorage.getItem("student_roll") || "BIA27-0001";
-  pfMiniMeta.innerHTML = `PRN: ${pfRoll.value}`;
-
-  // other fields can be kept as-is (empty) for now
-}
+const pfChangePhotoBtn = document.getElementById("pfChangePhoto");
 
 function openProfileModal() {
-  prefillProfile();
+  const u = currentUserData;
+  document.getElementById("pfNameLeft").textContent = u.name;
+  document.getElementById("pfFullName").value = u.name;
+  document.getElementById("pfEmail").value = u.email;
+  document.getElementById("pfPhone").value = u.mobile || "";
+  document.getElementById("pfAddress").value = u.permanentAddress || "";
+  document.getElementById("pfRoll").value = u.userId;
+  document.getElementById("pfCourseYear").value =
+    (u.course || "") + " " + (u.studentYear || "");
+  document.getElementById("pfEmergPhone").value = u.parentMobile || "";
+
   profileModal.classList.add("open");
   document.body.classList.add("modal-open");
 }
-function closeProfileModal() {
+document.getElementById("pfClose").addEventListener("click", () => {
   profileModal.classList.remove("open");
   document.body.classList.remove("modal-open");
+});
+
+if (pfChangePhotoBtn) {
+  pfChangePhotoBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    pfPhotoInput.click();
+  });
 }
 
-// close handlers
-pfClose.addEventListener("click", closeProfileModal);
-profileModal.addEventListener("click", (e) => {
-  if (e.target === profileModal) closeProfileModal();
-});
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && profileModal.classList.contains("open"))
-    closeProfileModal();
-});
+if (pfPhotoInput) {
+  pfPhotoInput.addEventListener("change", () => {
+    const file = pfPhotoInput.files[0];
+    if (file) {
+      document.getElementById("pfPhoto").src = URL.createObjectURL(file);
+      document.getElementById("pfPhoto").style.display = "block";
+      document.getElementById("pfPhotoFallback").style.display = "none";
+    }
+  });
+}
 
-// change photo (preview only)
-pfChangePhoto.addEventListener("click", () => pfPhotoInput.click());
-pfPhotoInput.addEventListener("change", () => {
+pfForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData();
+  formData.append("mobile", document.getElementById("pfPhone").value);
+  formData.append(
+    "permanentAddress",
+    document.getElementById("pfAddress").value
+  );
+  formData.append(
+    "parentMobile",
+    document.getElementById("pfEmergPhone").value
+  );
+
   const file = pfPhotoInput.files[0];
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  pfPhoto.src = url;
-  pfPhoto.style.display = "block";
-  pfPhotoFallback.style.display = "none";
+  if (file) {
+    formData.append("profilePhoto", file);
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/users/${currentUserId}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (res.ok) {
+      alert("Profile Updated Successfully!");
+      loadProfile();
+      profileModal.classList.remove("open");
+      document.body.classList.remove("modal-open");
+    } else {
+      alert("Update Failed: " + (await res.text()));
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Server Error");
+  }
 });
 
-// tabs switching
-tabButtons.forEach((btn) => {
+// Profile Tabs
+document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const tab = btn.dataset.tab;
-    tabButtons.forEach((b) => b.classList.toggle("active", b === btn));
-    tabPanels.forEach((p) =>
-      p.classList.toggle("active", p.id === `tab-${tab}`)
-    );
+    document
+      .querySelectorAll(".tab-btn")
+      .forEach((b) => b.classList.toggle("active", b === btn));
+    document
+      .querySelectorAll(".tab-panel")
+      .forEach((p) => p.classList.toggle("active", p.id === `tab-${tab}`));
   });
 });
-
-// save (demo only)
-pfForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  // collect data if needed
-  const payload = {
-    fullName: pfFullName.value.trim(),
-    phone: pfPhone.value.trim(),
-    address: pfAddress.value.trim(),
-    emergName: pfEmergName.value.trim(),
-    emergPhone: pfEmergPhone.value.trim(),
-    blood: pfBlood.value,
-    medical: pfMedical.value.trim(),
-    roll: pfRoll.value,
-    courseYear: pfCourseYear.value.trim(),
-    vehicle: pfVehicle.value.trim(),
-    hobbies: pfHobbies.value.trim(),
-    food: pfFood.value,
-    about: pfAbout.value.trim(),
-  };
-  alert("Profile saved (demo):\n" + JSON.stringify(payload, null, 2));
-});
-
-// ======================= Profile Modal end ===========================

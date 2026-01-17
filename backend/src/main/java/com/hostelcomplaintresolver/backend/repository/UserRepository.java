@@ -2,7 +2,9 @@ package com.hostelcomplaintresolver.backend.repository;
 
 
 import java.util.Optional;
+import java.util.List;
 
+import com.hostelcomplaintresolver.backend.model.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -19,7 +21,7 @@ public interface UserRepository extends JpaRepository<User, String> {
     Optional<User> findByPasswordResetToken(String token);
 
     boolean existsByEmail(String email);
-
+    List<User> findByRole(Role role);
     long countByRole(com.hostelcomplaintresolver.backend.model.Role role);
 
     }
