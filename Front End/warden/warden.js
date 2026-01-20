@@ -15,7 +15,7 @@ function parseJwt(token) {
         .atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch (e) {
@@ -222,13 +222,13 @@ document.querySelectorAll(".nav-link").forEach((btn) => {
 function refreshKPIs() {
   $("kpiNew").textContent = complaints.filter((c) => c.status === "new").length;
   $("kpiProgress").textContent = complaints.filter((c) =>
-    ["progress", "assigned"].includes(c.status)
+    ["progress", "assigned"].includes(c.status),
   ).length;
   $("kpiResolved").textContent = complaints.filter(
-    (c) => c.status === "resolved"
+    (c) => c.status === "resolved",
   ).length;
   $("kpiEscalated").textContent = complaints.filter(
-    (c) => c.status === "escalated"
+    (c) => c.status === "escalated",
   ).length;
 }
 
@@ -238,7 +238,7 @@ function refreshKPIs() {
 function renderPending() {
   const list = complaints
     .filter((c) =>
-      ["new", "assigned", "progress", "escalated"].includes(c.status)
+      ["new", "assigned", "progress", "escalated"].includes(c.status),
     )
     .slice(0, 6);
 
@@ -262,8 +262,8 @@ function renderPending() {
         <div>
           <strong>#${c.id}</strong> — ${c.title.substring(0, 30)}...
           <div class="muted">${c.type} • Room ${c.room} • ${fmtStatus(
-        c.status
-      )}</div>
+            c.status,
+          )}</div>
           <div class="muted" style="color:var(--blue); font-size:0.9em;">🕒 Slot: ${
             c.slot
           }</div>
@@ -281,7 +281,7 @@ function renderRecent() {
       (c) =>
         `<li><span>Complaint #${c.id} resolved by ${
           c.staff || "Staff"
-        }</span></li>`
+        }</span></li>`,
     )
     .join("");
 }
@@ -291,7 +291,7 @@ function renderNotices() {
     .slice(0, 5)
     .map(
       (n) =>
-        `<li><div><strong>${n.title}</strong><div class="muted">${n.date}</div></div></li>`
+        `<li><div><strong>${n.title}</strong><div class="muted">${n.date}</div></div></li>`,
     )
     .join("");
 }
@@ -299,19 +299,22 @@ function renderNotices() {
 /* =========================================================
    Complaints Table
    ========================================================= */
+/* =========================================================
+   Complaints Table (Updated with Blockchain Verification)
+   ========================================================= */
 $("filterStatus").addEventListener("change", renderComplaintsTable);
 
 function renderComplaintsTable() {
   const filter = $("filterStatus").value;
   const list = complaints.filter((c) =>
-    filter === "all" ? true : c.status === filter
+    filter === "all" ? true : c.status === filter,
   );
 
   $("complaintsBody").innerHTML = list
     .map((c) => {
       let actionHtml = "";
 
-      // ✅ Update: Logic to hide Assign button if already assigned
+      // 1. Status Actions (Assign / Review / Revert)
       if (c.status === "new") {
         actionHtml = `<button class="btn-primary" onclick="openAssign('${c.id}')">Assign</button>`;
       } else if (c.status === "assigned") {
@@ -324,7 +327,17 @@ function renderComplaintsTable() {
         actionHtml = `<span class="muted">${c.status}</span>`;
       }
 
-      // ✅ Corrected Table Row Return (Including Priority Badge)
+      // 2. Add Blockchain Verify Button (Next to actions)
+      // We wrap actions in a flex container for alignment
+      const combinedActions = `
+        <div style="display:flex; gap:8px; align-items:center;">
+            ${actionHtml}
+            <button class="btn-xs" style="background:#2c3e50; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="verifyBlockchainRecord('${c.id}')" title="Check Ledger Integrity">
+                ⛓️ Verify
+            </button>
+        </div>
+      `;
+
       return `
       <tr>
         <td>${c.id}</td>
@@ -332,10 +345,8 @@ function renderComplaintsTable() {
         <td>${c.title}</td>
         <td>${c.room}</td>
         <td>${c.slot}</td>
-        <td><span class="status ${statusClass(c.status)}">${fmtStatus(
-        c.status
-      )}</span></td>
-        <td>${actionHtml}</td>
+        <td><span class="status ${statusClass(c.status)}">${fmtStatus(c.status)}</span></td>
+        <td>${combinedActions}</td>
       </tr>`;
     })
     .join("");
@@ -584,7 +595,7 @@ function renderNoticesFull() {
   $("noticesFull").innerHTML = notices
     .map(
       (n) =>
-        `<li><div><strong>${n.title}</strong><div class="muted">${n.date}</div></div></li>`
+        `<li><div><strong>${n.title}</strong><div class="muted">${n.date}</div></div></li>`,
     )
     .join("");
 }
@@ -685,7 +696,7 @@ function renderProofGrid() {
       (c) => `
       <div class="proof-card" onclick="reviewEscalation('${c.id}')" style="cursor:pointer; border:1px solid #d35400;">
         <span>⚠️ Review Proof #${c.id}</span>
-      </div>`
+      </div>`,
     )
     .join("");
 }
@@ -707,7 +718,7 @@ function renderResale() {
           ? `<button onclick="markSold('${it.id}')">Mark Sold</button>`
           : `<span class="muted">Sold</span>`
       }
-    </div>`
+    </div>`,
     )
     .join("");
 }
@@ -771,3 +782,61 @@ function getPriorityBadge(priority) {
   }
   return `<span style="background:#2ecc71; color:white; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:bold;">🟢 LOW</span>`;
 }
+
+/* =========================================================
+   BLOCKCHAIN VERIFICATION LOGIC
+   ========================================================= */
+window.verifyBlockchainRecord = async (id) => {
+  try {
+    // 1. Find Local Data (What the Warden sees currently)
+    const localRecord = complaints.find((c) => String(c.id) === String(id));
+    if (!localRecord) return alert("Error: Local record not found.");
+
+    // 2. Fetch Immutable Data (Directly from Hyperledger Fabric via API)
+    const res = await fetch(`${API_URL}/complaints/${id}/verify`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      throw new Error(
+        "Complaint ID not found on Blockchain Ledger. It might have been created before the network was live.",
+      );
+    }
+
+    // 3. Parse Blockchain Data
+    const chainData = await res.json();
+    // Expected format from Chaincode: { complaintId, title, description, roomNumber... }
+
+    // 4. Compare Data Points
+    // Note: In warden.js, 'title' holds the description, and 'type' holds the category (title).
+
+    const isDescriptionMatch = chainData.description === localRecord.title;
+    const isRoomMatch = chainData.roomNumber === localRecord.room;
+    const isCategoryMatch = chainData.title === localRecord.type;
+
+    // 5. Generate Report
+    if (isDescriptionMatch && isRoomMatch && isCategoryMatch) {
+      alert(
+        `✅ INTEGRITY VERIFIED!\n\n` +
+          `The data in your dashboard matches the Immutable Blockchain Ledger perfectly.\n\n` +
+          `• Ledger ID: ${chainData.complaintId}\n` +
+          `• Student: ${chainData.studentName}\n` +
+          `• Status: ${chainData.status}`,
+      );
+    } else {
+      alert(
+        `⚠️ DATA MISMATCH DETECTED!\n\n` +
+          `The data in the dashboard has been altered compared to the Blockchain.\n\n` +
+          `Blockchain Record:\n` +
+          `• Type: ${chainData.title}\n` +
+          `• Desc: ${chainData.description}\n\n` +
+          `Dashboard Record:\n` +
+          `• Type: ${localRecord.type}\n` +
+          `• Desc: ${localRecord.title}`,
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    alert("❌ Verification Failed: " + error.message);
+  }
+};
