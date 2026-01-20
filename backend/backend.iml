@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="4">
+  <component name="AdditionalModuleElements">
+    <content url="file://$MODULE_DIR$" dumb="true">
+      <sourceFolder url="file://$MODULE_DIR$/blockchain-chaincode" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/blockchain-chaincode/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/blockchain-chaincode/src/main/java" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/blockchain-chaincode/build/install/hostel/lib" />
+      <excludeFolder url="file://$MODULE_DIR$/blockchain-chaincode/src/main" />
+      <excludeFolder url="file://$MODULE_DIR$/blockchain-chaincode/src/main/java/org" />
+      <excludeFolder url="file://$MODULE_DIR$/blockchain-chaincode/src/main/java/org/example" />
+    </content>
+  </component>
+</module>
