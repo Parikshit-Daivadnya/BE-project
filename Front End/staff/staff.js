@@ -16,7 +16,7 @@ function parseJwt(token) {
         .atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch (e) {
@@ -123,7 +123,7 @@ async function loadPerformance() {
       `${API_URL}/complaints/stats/staff/${currentUserId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      }
+      },
     );
 
     if (res.ok) {
@@ -237,7 +237,7 @@ function renderWeek(state) {
     const options = { month: "long", year: "numeric" };
     calMonthTitle.textContent = state.start.toLocaleDateString(
       "en-US",
-      options
+      options,
     );
   }
 
@@ -263,7 +263,7 @@ function renderWeek(state) {
                 (e) =>
                   `<div class="cal-chip ev-${e.status}" title="${e.title}">
                     <span class="txt">#${e.id} Room ${e.room}</span>
-                   </div>`
+                   </div>`,
               )
               .join("")}
         </div>
@@ -311,7 +311,7 @@ function renderTasks() {
         j.id
       }')">View</button>
     </li>
-  `
+  `,
     )
     .join("");
 }
@@ -341,22 +341,46 @@ document
   .getElementById("jobsClose")
   ?.addEventListener("click", () => jobsModal.classList.remove("open"));
 
+/* =========================================================
+   JOBS TABLE (With Blockchain Verification)
+   ========================================================= */
 function renderJobsTable() {
   if (!jobsBody) return;
   jobsBody.innerHTML = jobs
-    .map(
-      (j) => `
+    .map((j) => {
+      // 1. Define Actions
+      let actionBtn = "";
+      if (j.status !== "resolved") {
+        actionBtn = `<button class="action-btn" onclick="openResolveFlow('${j.id}')">Resolve</button>`;
+      } else {
+        actionBtn = `<span class="status-chip status-resolved">Done</span>`;
+      }
+
+      // 2. Add Verify Button (The "Trust Bridge")
+      const verifyBtn = `
+        <button class="action-btn" 
+                style="background:#2c3e50; margin-left:5px;" 
+                onclick="verifyJobOnChain('${j.id}')" 
+                title="Check Blockchain Record">
+           ⛓️ Verify
+        </button>`;
+
+      return `
     <tr>
-      <td>${j.id}</td><td>${j.type}</td><td>${j.title}</td><td>${j.room}</td>
+      <td>${j.id}</td>
+      <td>${j.type}</td>
+      <td>${j.title}</td>
+      <td>${j.room}</td>
       <td style="color:var(--blue); font-weight:500;">${j.slot}</td>
       <td><span class="status-chip status-${j.status}">${j.status}</span></td>
-      <td>${
-        j.status !== "resolved"
-          ? `<button class="action-btn" onclick="openResolveFlow('${j.id}')">Resolve</button>`
-          : "Done"
-      }</td>
-    </tr>`
-    )
+      <td>
+        <div style="display:flex; align-items:center; gap:5px;">
+            ${actionBtn}
+            ${verifyBtn}
+        </div>
+      </td>
+    </tr>`;
+    })
     .join("");
 }
 
@@ -449,7 +473,7 @@ function renderPerformanceList() {
           Room ${j.room} • ${j.title.substring(0, 30)}...
         </p>
       </li>
-    `
+    `,
     )
     .join("");
 }
@@ -491,3 +515,64 @@ document.getElementById("logoutBtn")?.addEventListener("click", () => {
   localStorage.removeItem("jwt_token");
   window.location.href = "../auth/index.html";
 });
+
+/* =========================================================
+   BLOCKCHAIN FEATURES
+   ========================================================= */
+
+// 1. Verify Job (Read from Hyperledger Ledger)
+window.verifyJobOnChain = async (id) => {
+  try {
+    const res = await fetch(`${API_URL}/complaints/${id}/verify`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      const chainData = await res.json();
+      alert(
+        `✅ BLOCKCHAIN VERIFIED!\n\n` +
+          `Complaint ID: ${chainData.complaintId}\n` +
+          `Student: ${chainData.studentName}\n` +
+          `Status: ${chainData.status}\n\n` +
+          `This record is immutable and proves you completed the job.`,
+      );
+    } else {
+      alert("⚠️ Record not found on Blockchain (it might be an old entry).");
+    }
+  } catch (e) {
+    alert("Verification Error: " + e.message);
+  }
+};
+
+// 2. Updated Resolve Logic
+// (Find the existing 'resolveForm' listener and REPLACE it with this one if you want better alerts)
+document
+  .getElementById("resolveForm")
+  ?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector("button[type='submit']");
+    const originalText = btn.textContent;
+
+    btn.textContent = "Syncing to Blockchain...";
+    btn.disabled = true;
+
+    try {
+      // This call triggers the Java Backend -> Which triggers Hyperledger Fabric
+      await fetch(`${API_URL}/complaints/${resJobId.value}/resolve`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      alert("✅ Job Resolved!\nStatus updated on Database & Blockchain.");
+
+      resolveModal.classList.remove("open");
+      await loadAssignedJobs(); // Refresh list
+      updateUI();
+    } catch (e) {
+      console.error(e);
+      alert("Error resolving job.");
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  });

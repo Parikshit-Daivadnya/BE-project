@@ -15,7 +15,7 @@ function parseJwt(token) {
         .atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch (e) {
@@ -125,15 +125,15 @@ initDashboard();
    =================================================== */
 function updateKPIs() {
   const pending = myComplaintsData.filter((c) =>
-    ["RAISED", "IN_PROGRESS"].includes(c.status)
+    ["RAISED", "IN_PROGRESS"].includes(c.status),
   ).length;
   const resolved = myComplaintsData.filter((c) =>
-    ["RESOLVED", "CLOSED"].includes(c.status)
+    ["RESOLVED", "CLOSED"].includes(c.status),
   ).length;
   document.getElementById("kpiPending").textContent = pending;
   document.getElementById("kpiResolved").textContent = resolved;
   document.getElementById("kpiResale").textContent = resaleItems.filter(
-    (i) => !i.sold
+    (i) => !i.sold,
   ).length;
 }
 
@@ -147,12 +147,12 @@ function renderRecentActivity() {
       (c) => `
         <li>
             <span>Raised: ${c.category} - ${c.description.substring(
-        0,
-        20
-      )}...</span>
+              0,
+              20,
+            )}...</span>
             <span style="font-weight:bold; color:var(--blue)">${c.status}</span>
         </li>
-    `
+    `,
     )
     .join("");
 }
@@ -173,7 +173,7 @@ function renderNotices() {
                 } — ${n.description.substring(0, 40)}...</p>
             </div>
         </li>
-    `
+    `,
     )
     .join("");
 }
@@ -188,7 +188,7 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
 
 document
   .getElementById("profileBtn")
-  .addEventListener("click", openProfileModal);
+  ?.addEventListener("click", openProfileModal);
 
 document.querySelectorAll(".ql-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -201,7 +201,7 @@ document.querySelectorAll(".ql-btn").forEach((btn) => {
 });
 
 /* ===================================================
-   4. COMPLAINT LOGIC (Lodge)
+   4. COMPLAINT LOGIC (Dual Save: SQL + Blockchain)
    =================================================== */
 const lcModal = document.getElementById("complaintModal");
 const lcForm = document.getElementById("lcForm");
@@ -224,10 +224,11 @@ lcForm.addEventListener("submit", async (e) => {
   const payload = {
     category: document.getElementById("lcType").value,
     description: document.getElementById("lcDesc").value,
-    timeSlot: document.getElementById("lcSlot").value,
+    roomNumber: currentUserData.roomNumber || "N/A",
   };
 
   try {
+    // Single call: Backend handles both SQL and Blockchain internally
     const res = await fetch(`${API_URL}/complaints`, {
       method: "POST",
       headers: {
@@ -236,18 +237,25 @@ lcForm.addEventListener("submit", async (e) => {
       },
       body: JSON.stringify(payload),
     });
+
     if (res.ok) {
-      alert("Complaint Raised Successfully!");
+      const saved = await res.json();
+      alert(
+        `✅ Success!\nComplaint ID: ${saved.id}\nRecord synced to Blockchain.`,
+      );
       lcForm.reset();
       closeComplaintModal();
-      loadComplaints();
+
+      await loadComplaints();
       updateKPIs();
+      renderRecentActivity();
     } else {
-      alert("Failed: " + (await res.text()));
+      const errorText = await res.text();
+      alert("❌ Submission Failed: " + errorText);
     }
   } catch (error) {
-    console.error(error);
-    alert("Server Error");
+    console.error("Submission Error:", error);
+    alert("❌ Error: Could not connect to the server.");
   }
 });
 
@@ -270,7 +278,7 @@ document
   ?.addEventListener("click", closeComplaintsModal);
 
 /* ===================================================
-   Render Table
+   Render Table & Verification
    =================================================== */
 function renderComplaintsTable(filter = "all") {
   const filtered = myComplaintsData.filter((c) => {
@@ -298,6 +306,7 @@ function renderComplaintsTable(filter = "all") {
       } else if (c.status === "CLOSED") {
         actionButtons = `<span style="color:green;">Closed</span>`;
       } else {
+        // Points to verifyChain window function
         actionButtons = `<button class="action-btn" onclick="verifyChain('${c.id}')">Verify</button>`;
       }
 
@@ -320,15 +329,24 @@ function renderComplaintsTable(filter = "all") {
     .join("");
 }
 mcFilter.addEventListener("change", () =>
-  renderComplaintsTable(mcFilter.value)
+  renderComplaintsTable(mcFilter.value),
 );
 
 window.verifyChain = async (id) => {
   try {
-    const res = await fetch(`${API_URL}/blockchain/verify/${id}`);
-    alert(await res.text());
+    // API Path: /api/complaints/{id}/verify
+    const res = await fetch(`${API_URL}/complaints/${id}/verify`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const blockchainData = await res.text();
+      alert("🔗 Blockchain Record Verified:\n" + blockchainData);
+    } else {
+      const errorMsg = await res.text();
+      alert("❌ Verification failed: " + errorMsg);
+    }
   } catch (e) {
-    alert("Verification failed");
+    alert("Verification failed: Connection error.");
   }
 };
 
@@ -453,7 +471,7 @@ escForm.addEventListener("submit", async (e) => {
 });
 
 /* ===================================================
-   7. RESALE MARKET (Restored & Fixed)
+   7. RESALE MARKET
    =================================================== */
 const resaleModal = document.getElementById("resaleModal");
 const rsClose = document.getElementById("rsClose");
@@ -461,7 +479,6 @@ const rsGrid = document.getElementById("rsGrid");
 const postItemModal = document.getElementById("postItemModal");
 const piForm = document.getElementById("piForm");
 
-// ✅ RESTORED: Functions to Open/Close Modal
 function openResaleModal() {
   if (resaleModal) {
     resaleModal.classList.add("open");
@@ -477,7 +494,6 @@ function closeResaleModal() {
 }
 if (rsClose) rsClose.addEventListener("click", closeResaleModal);
 
-// ✅ RESTORED: Render Logic
 function renderResale() {
   const q = document.getElementById("rsSearch").value.toLowerCase();
   const cat = document.getElementById("rsCategory").value;
@@ -505,28 +521,25 @@ function renderResale() {
                 } • ${new Date(it.postedDate).toLocaleDateString()}</p>
                 <div class="rs-actions"><button class="rs-view">Details</button></div>
             </div>
-        `
+        `,
       )
       .join("");
   }
 }
 
-// Search Listeners
-document.getElementById("rsSearch").addEventListener("input", renderResale);
-document.getElementById("rsCategory").addEventListener("change", renderResale);
+document.getElementById("rsSearch")?.addEventListener("input", renderResale);
+document.getElementById("rsCategory")?.addEventListener("change", renderResale);
 
-// Open "Post Item" Modal
-document.getElementById("rsPostBtn").addEventListener("click", () => {
+document.getElementById("rsPostBtn")?.addEventListener("click", () => {
   postItemModal.classList.add("open");
   document.body.classList.add("modal-open");
 });
-document.getElementById("piClose").addEventListener("click", () => {
+document.getElementById("piClose")?.addEventListener("click", () => {
   postItemModal.classList.remove("open");
   document.body.classList.remove("modal-open");
 });
 
-// ✅ FIXED: Post Item Submission (Using FormData)
-piForm.addEventListener("submit", async (e) => {
+piForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const formData = new FormData();
@@ -536,7 +549,6 @@ piForm.addEventListener("submit", async (e) => {
   formData.append("description", document.getElementById("piDesc").value);
   formData.append("ownerName", currentUserData.name);
 
-  // Mandatory Image
   const imageInput = document.getElementById("piImage");
   if (imageInput && imageInput.files[0]) {
     formData.append("image", imageInput.files[0]);
@@ -548,9 +560,7 @@ piForm.addEventListener("submit", async (e) => {
   try {
     const res = await fetch(`${API_URL}/resale`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`, // NO Content-Type!
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
 
@@ -570,118 +580,71 @@ piForm.addEventListener("submit", async (e) => {
 });
 
 /* ===================================================
-   8. ALL NOTICES MODAL
+   8. NOTICES & PROFILE
    =================================================== */
 const noticesModal = document.getElementById("noticesModal");
-document.getElementById("viewAllNotices").addEventListener("click", () => {
+document.getElementById("viewAllNotices")?.addEventListener("click", () => {
   document.getElementById("allNoticesBody").innerHTML = notices
     .map(
       (n) => `
         <div class="notice-full-card">
             <div class="nt-title">${n.title}</div>
             <div class="nt-meta">${new Date(n.date).toLocaleDateString()} • ${
-        n.postedBy || "Warden"
-      }</div>
+              n.postedBy || "Warden"
+            }</div>
             <div class="nt-desc">${n.description}</div>
         </div>
-    `
+    `,
     )
     .join("");
   noticesModal.classList.add("open");
   document.body.classList.add("modal-open");
 });
-document.getElementById("ntClose").addEventListener("click", () => {
+document.getElementById("ntClose")?.addEventListener("click", () => {
   noticesModal.classList.remove("open");
   document.body.classList.remove("modal-open");
 });
 
-/* ===================================================
-   9. PROFILE MODAL
-   =================================================== */
 const profileModal = document.getElementById("profileModal");
 const pfForm = document.getElementById("pfForm");
-const pfPhotoInput = document.getElementById("pfPhotoInput");
-const pfChangePhotoBtn = document.getElementById("pfChangePhoto");
 
 function openProfileModal() {
   const u = currentUserData;
-  document.getElementById("pfNameLeft").textContent = u.name;
-  document.getElementById("pfFullName").value = u.name;
-  document.getElementById("pfEmail").value = u.email;
+  document.getElementById("pfNameLeft").textContent = u.name || "N/A";
+  document.getElementById("pfFullName").value = u.name || "";
+  document.getElementById("pfEmail").value = u.email || "";
   document.getElementById("pfPhone").value = u.mobile || "";
-  document.getElementById("pfAddress").value = u.permanentAddress || "";
-  document.getElementById("pfRoll").value = u.userId;
-  document.getElementById("pfCourseYear").value =
-    (u.course || "") + " " + (u.studentYear || "");
-  document.getElementById("pfEmergPhone").value = u.parentMobile || "";
+  document.getElementById("pfRoll").value = u.userId || "";
 
   profileModal.classList.add("open");
   document.body.classList.add("modal-open");
 }
-document.getElementById("pfClose").addEventListener("click", () => {
+document.getElementById("pfClose")?.addEventListener("click", () => {
   profileModal.classList.remove("open");
   document.body.classList.remove("modal-open");
 });
 
-if (pfChangePhotoBtn) {
-  pfChangePhotoBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    pfPhotoInput.click();
-  });
-}
-
-if (pfPhotoInput) {
-  pfPhotoInput.addEventListener("change", () => {
-    const file = pfPhotoInput.files[0];
-    if (file) {
-      document.getElementById("pfPhoto").src = URL.createObjectURL(file);
-      document.getElementById("pfPhoto").style.display = "block";
-      document.getElementById("pfPhotoFallback").style.display = "none";
-    }
-  });
-}
-
-pfForm.addEventListener("submit", async (e) => {
+pfForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-
   const formData = new FormData();
   formData.append("mobile", document.getElementById("pfPhone").value);
-  formData.append(
-    "permanentAddress",
-    document.getElementById("pfAddress").value
-  );
-  formData.append(
-    "parentMobile",
-    document.getElementById("pfEmergPhone").value
-  );
-
-  const file = pfPhotoInput.files[0];
-  if (file) {
-    formData.append("profilePhoto", file);
-  }
-
   try {
     const res = await fetch(`${API_URL}/users/${currentUserId}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
-
     if (res.ok) {
-      alert("Profile Updated Successfully!");
+      alert("Profile Updated!");
       loadProfile();
       profileModal.classList.remove("open");
       document.body.classList.remove("modal-open");
-    } else {
-      alert("Update Failed: " + (await res.text()));
     }
   } catch (e) {
     console.error(e);
-    alert("Server Error");
   }
 });
 
-// Profile Tabs
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const tab = btn.dataset.tab;
