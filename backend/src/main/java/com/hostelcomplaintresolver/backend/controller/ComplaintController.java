@@ -126,4 +126,32 @@ public class ComplaintController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
         }
     }
+
+
+    @PutMapping(value = "/{complaintId}/reopen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> reopenComplaint(
+            @PathVariable Long complaintId,
+            @RequestParam("reason") String reason,
+            @RequestParam("proof") MultipartFile proof,
+            Principal principal) {
+        try {
+            // Log escalation to both SQL and Blockchain
+            Complaint reopened = complaintService.reopenComplaint(complaintId, reason, proof, principal.getName());
+            return ResponseEntity.ok(reopened);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{complaintId}/revert")
+    @PreAuthorize("hasAnyRole('WARDEN','ADMIN')")
+    public ResponseEntity<?> revertComplaint(@PathVariable Long complaintId) {
+        try {
+            Complaint reverted = complaintService.revertToInProgress(complaintId);
+            return ResponseEntity.ok(reverted);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        }
+    }
 }
