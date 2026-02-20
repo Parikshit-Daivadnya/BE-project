@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 public class FabricGatewayConfig {
 
     private static final String MSP_ID = "Org1MSP";
-    private static final String CHANNEL_NAME = "hostelchannel";
+    private static final String CHANNEL_NAME = "hostelchannelv2";
     private static final String CHAINCODE_NAME = "hostel";
 
     // ✅ PATHS UPDATED TO D: DRIVE (Synced from WSL)
