@@ -487,22 +487,39 @@ window.reviewEscalation = (id) => {
 
   if (approveSummary && approvePreview) {
     approveSummary.innerHTML = `
-        <strong>Complaint #${c.id} (ESCALATED)</strong>
-        <p>${c.title}</p>
-        <p style="color:red; font-weight:bold;">Student report: Not Solved</p>
+        <div style="margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #2c3e50;">Complaint #${c.id} (${c.status.toUpperCase()})</h3>
+            <p style="margin: 5px 0; font-size: 1.1rem;">${c.title}</p>
+            <p style="color:#e74c3c; font-weight:bold; margin-top: 10px;">Student report: Not Solved</p>
+        </div>
       `;
 
-    // Dynamic Image Path
+    // ✅ FIXED: Construction of the Full URL for the proof image
     if (c.proofUrl) {
-      const baseUrl = API_URL.replace("/api", "");
-      approvePreview.innerHTML = `<img src="${baseUrl}${c.proofUrl}" style="max-width:100%; border-radius:8px; border:1px solid #ddd;">`;
+      // Ensure there are no double slashes if proofUrl already starts with /
+      const cleanPath = c.proofUrl.startsWith("/")
+        ? c.proofUrl
+        : "/" + c.proofUrl;
+      const fullImageUrl = `http://localhost:8080${cleanPath}`;
+
+      approvePreview.innerHTML = `
+        <div style="text-align: center; background: #f8f9fa; padding: 10px; border-radius: 8px;">
+            <img src="${fullImageUrl}" 
+                 alt="Resolution Proof" 
+                 style="max-width:100%; max-height: 400px; border-radius:8px; border:2px solid #ddd; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
+                 onerror="this.src='https://via.placeholder.com/400x300?text=Error+Loading+Image'">
+            <p class="muted" style="margin-top: 8px; font-size: 0.8rem;">Click to enlarge</p>
+        </div>`;
     } else {
-      approvePreview.innerHTML =
-        "<p class='muted'>No proof image available.</p>";
+      approvePreview.innerHTML = `
+        <div style="padding: 40px; text-align: center; border: 2px dashed #ccc; border-radius: 8px;">
+            <p class='muted'>No proof image available for this escalation.</p>
+        </div>`;
     }
 
     approveBtn.textContent = "Revert to In-Progress";
     approveBtn.className = "btn-primary";
+    approveBtn.style.backgroundColor = "#3498db";
     approveBtn.onclick = () => revertComplaint(c.id);
 
     approveModal.classList.add("open");
