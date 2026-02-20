@@ -15,7 +15,7 @@ public class BlockchainService {
      * Records a new transaction on the actual Hyperledger Fabric ledger.
      * Order must match ComplaintContract: id, studentName, roomNumber, category, description, status
      */
-    public void logTransaction(String complaintId, String studentName, String roomNumber, String category, String description, String status) {
+    public void logTransaction(String complaintId, String studentName, String roomNumber, String category, String description, String status, String timeSlot) {
         try {
             // ✅ FIXED ORDER: Aligning variables with the Ledger's internal structure
             contract.submitTransaction("createComplaint",
@@ -24,7 +24,8 @@ public class BlockchainService {
                     roomNumber,    // 3. roomNumber  -> Maps to 'roomNumber'
                     category,      // 4. category    -> Maps to 'category'
                     description,   // 5. description -> Maps to 'description'
-                    status         // 6. status      -> Maps to 'status'
+                    status,
+                    timeSlot
             );
 
             System.out.println("✅ Actual Hyperledger Fabric Ledger Updated for ID: " + complaintId);
@@ -41,6 +42,20 @@ public class BlockchainService {
         } catch (Exception e) {
             System.err.println("❌ Failed to read from Hyperledger: " + e.getMessage());
             return null;
+        }
+    }
+
+    public void updateTransaction(String complaintId, String newStatus, String timeSlot) {
+        try {
+            // This matches the updateComplaint(ctx, id, status, timeSlot) in your WSL code
+            contract.submitTransaction("updateComplaint",
+                    complaintId,
+                    newStatus,
+                    timeSlot
+            );
+            System.out.println("✅ Ledger Status Updated: " + complaintId + " to " + newStatus);
+        } catch (Exception e) {
+            System.err.println("❌ Ledger Update Failed: " + e.getMessage());
         }
     }
 }
